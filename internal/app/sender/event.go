@@ -1,9 +1,7 @@
 package sender
 
-import (
-	"github.com/ozonmp/omp-demo-api/internal/model"
-)
+import "github.com/ozonmp/pay-card-api/internal/model"
 
 type EventSender interface {
-	Send(subdomain *model.SubdomainEvent) error
+	Send(subdomain *model.CardEvent) error
 }

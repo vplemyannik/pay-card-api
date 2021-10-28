@@ -1,11 +1,11 @@
 package producer
 
 import (
+	"github.com/ozonmp/pay-card-api/internal/app/repo"
+	"github.com/ozonmp/pay-card-api/internal/app/sender"
+	"github.com/ozonmp/pay-card-api/internal/model"
 	"sync"
 	"time"
-
-	"github.com/ozonmp/omp-demo-api/internal/app/sender"
-	"github.com/ozonmp/omp-demo-api/internal/model"
 
 	"github.com/gammazero/workerpool"
 )
@@ -20,20 +20,21 @@ type producer struct {
 	timeout time.Duration
 
 	sender sender.EventSender
-	events <-chan model.SubdomainEvent
+	events <-chan model.CardEvent
 
 	workerPool *workerpool.WorkerPool
+	repo       repo.EventRepo
 
 	wg   *sync.WaitGroup
 	done chan bool
 }
 
-// todo for students: add repo
 func NewKafkaProducer(
 	n uint64,
 	sender sender.EventSender,
-	events <-chan model.SubdomainEvent,
+	events <-chan model.CardEvent,
 	workerPool *workerpool.WorkerPool,
+	repo repo.EventRepo,
 ) Producer {
 
 	wg := &sync.WaitGroup{}
@@ -44,6 +45,7 @@ func NewKafkaProducer(
 		sender:     sender,
 		events:     events,
 		workerPool: workerPool,
+		repo:       repo,
 		wg:         wg,
 		done:       done,
 	}
@@ -59,11 +61,11 @@ func (p *producer) Start() {
 				case event := <-p.events:
 					if err := p.sender.Send(&event); err != nil {
 						p.workerPool.Submit(func() {
-							// ...
+							p.repo.Unlock([]uint64{event.ID})
 						})
 					} else {
 						p.workerPool.Submit(func() {
-							// ...
+							p.repo.Remove([]uint64{event.ID})
 						})
 					}
 				case <-p.done:
