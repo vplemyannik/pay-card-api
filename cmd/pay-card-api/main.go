@@ -5,7 +5,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/ozonmp/omp-demo-api/internal/app/retranslator"
+	"github.com/ozonmp/pay-card-api/internal/app/retranslator"
 )
 
 func main() {
