@@ -1,7 +1,14 @@
 package model
 
-type Subdomain struct {
-	ID uint64
+import "time"
+
+type Card struct {
+	OwnerId        uint64
+	PaymentSystem  string
+	Number         string
+	HolderName     string
+	ExpirationDate time.Time
+	CvcCvv         string
 }
 
 type EventType uint8
@@ -17,9 +24,9 @@ const (
 	Processed
 )
 
-type SubdomainEvent struct {
+type CardEvent struct {
 	ID     uint64
 	Type   EventType
 	Status EventStatus
-	Entity *Subdomain
+	Entity *Card
 }

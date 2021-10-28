@@ -1,13 +1,12 @@
 package retranslator
 
 import (
+	"github.com/ozonmp/pay-card-api/internal/app/consumer"
+	"github.com/ozonmp/pay-card-api/internal/app/producer"
+	"github.com/ozonmp/pay-card-api/internal/app/repo"
+	"github.com/ozonmp/pay-card-api/internal/app/sender"
+	"github.com/ozonmp/pay-card-api/internal/model"
 	"time"
-
-	"github.com/ozonmp/omp-demo-api/internal/app/consumer"
-	"github.com/ozonmp/omp-demo-api/internal/app/producer"
-	"github.com/ozonmp/omp-demo-api/internal/app/repo"
-	"github.com/ozonmp/omp-demo-api/internal/app/sender"
-	"github.com/ozonmp/omp-demo-api/internal/model"
 
 	"github.com/gammazero/workerpool"
 )
@@ -32,14 +31,14 @@ type Config struct {
 }
 
 type retranslator struct {
-	events     chan model.SubdomainEvent
+	events     chan model.CardEvent
 	consumer   consumer.Consumer
 	producer   producer.Producer
 	workerPool *workerpool.WorkerPool
 }
 
 func NewRetranslator(cfg Config) Retranslator {
-	events := make(chan model.SubdomainEvent, cfg.ChannelSize)
+	events := make(chan model.CardEvent, cfg.ChannelSize)
 	workerPool := workerpool.New(cfg.WorkerCount)
 
 	consumer := consumer.NewDbConsumer(
@@ -52,7 +51,8 @@ func NewRetranslator(cfg Config) Retranslator {
 		cfg.ProducerCount,
 		cfg.Sender,
 		events,
-		workerPool)
+		workerPool,
+		cfg.Repo)
 
 	return &retranslator{
 		events:     events,
