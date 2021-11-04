@@ -2,17 +2,17 @@ package api
 
 import (
 	"context"
+	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
-	"github.com/rs/zerolog/log"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"github.com/ozonmp/pay-card-api/internal/repo"
 
-	"github.com/ozonmp/omp-template-api/internal/repo"
-
-	pb "github.com/ozonmp/omp-template-api/pkg/omp-template-api"
+	pb "github.com/ozonmp/pay-card-api/pkg/pay-card-api"
 )
 
 var (
@@ -22,47 +22,54 @@ var (
 	})
 )
 
-type templateAPI struct {
-	pb.UnimplementedOmpTemplateApiServiceServer
+type cardAPI struct {
+	pb.UnimplementedPayCardApiServiceServer
 	repo repo.Repo
 }
 
-// NewTemplateAPI returns api of omp-template-api service
-func NewTemplateAPI(r repo.Repo) pb.OmpTemplateApiServiceServer {
-	return &templateAPI{repo: r}
+func NewTemplateAPI(r repo.Repo) pb.PayCardApiServiceServer {
+	return &cardAPI{repo: r}
 }
 
-func (o *templateAPI) DescribeTemplateV1(
-	ctx context.Context,
-	req *pb.DescribeTemplateV1Request,
-) (*pb.DescribeTemplateV1Response, error) {
-
+func (a cardAPI) CreateCard(ctx context.Context, req *pb.CreateCardV1Request) (*pb.CreateCardV1Response, error) {
 	if err := req.Validate(); err != nil {
-		log.Error().Err(err).Msg("DescribeTemplateV1 - invalid argument")
+		log.Error().Err(err).Msg("CreateCardV1Request - invalid argument")
 
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	template, err := o.repo.DescribeTemplate(ctx, req.TemplateId)
-	if err != nil {
-		log.Error().Err(err).Msg("DescribeTemplateV1 -- failed")
+	log.Debug().Msg("CreateCard request happens")
 
-		return nil, status.Error(codes.Internal, err.Error())
+	return nil, status.Error(codes.Unimplemented, "Not implemented")
+}
+
+func (a cardAPI) RemoveCard(ctx context.Context, req *pb.RemoveCardV1Request) (*emptypb.Empty, error) {
+	if err := req.Validate(); err != nil {
+		log.Error().Err(err).Msg("RemoveCardV1Request - invalid argument")
+
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if template == nil {
-		log.Debug().Uint64("templateId", req.TemplateId).Msg("template not found")
-		totalTemplateNotFound.Inc()
+	log.Debug().Msg("RemoveCard request happens")
 
-		return nil, status.Error(codes.NotFound, "template not found")
+	return nil, status.Error(codes.Unimplemented, "Not implemented")
+}
+
+func (a cardAPI) DescribeCard(ctx context.Context, req *pb.DescribeCardV1Request) (*pb.Card, error) {
+	if err := req.Validate(); err != nil {
+		log.Error().Err(err).Msg("DescribeCardV1Request - invalid argument")
+
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	log.Debug().Msg("DescribeTemplateV1 - success")
+	log.Debug().Msg("DescribeCard request happens")
 
-	return &pb.DescribeTemplateV1Response{
-		Value: &pb.Template{
-			Id:  template.ID,
-			Foo: template.Foo,
-		},
-	}, nil
+	return nil, status.Error(codes.Unimplemented, "Not implemented")
+}
+
+func (a cardAPI) ListCard(ctx context.Context, empty *emptypb.Empty) (*pb.ListCardV1Response, error) {
+
+	log.Debug().Msg("ListCard request happens")
+
+	return nil, status.Error(codes.Unimplemented, "Not implemented")
 }

@@ -5,8 +5,8 @@ endif
 
 export GO111MODULE=on
 
-SERVICE_NAME=omp-template-api
-SERVICE_PATH=ozonmp/omp-template-api
+SERVICE_NAME=pay-card-api
+SERVICE_PATH=ozonmp/pay-card-api
 
 PGV_VERSION:="v0.6.1"
 BUF_VERSION:="v0.56.0"
@@ -61,7 +61,7 @@ generate-go: .generate-install-buf .generate-go .generate-finalize-go
 	cd pkg/$(SERVICE_NAME) && ls go.mod || (go mod init github.com/$(SERVICE_PATH)/pkg/$(SERVICE_NAME) && go mod tidy)
 
 .generate-finalize-python:
-	find pypkg/omp-template-api -type d -exec touch {}/__init__.py \;
+	find pypkg/pay-card-api -type d -exec touch {}/__init__.py \;
 
 # ----------------------------------------------------------------
 
