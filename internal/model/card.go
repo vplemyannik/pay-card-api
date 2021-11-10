@@ -3,25 +3,29 @@ package model
 import "time"
 
 type Card struct {
-	OwnerId        uint64
-	PaymentSystem  string
-	Number         string
-	HolderName     string
-	ExpirationDate time.Time
-	CvcCvv         string
+	CardId         uint64    `db:"id"`
+	OwnerId        uint64    `db:"owner_id"`
+	PaymentSystem  string    `db:"payment_system"`
+	Number         string    `db:"number"`
+	HolderName     string    `db:"holder_name"`
+	ExpirationDate time.Time `db:"expiration_date"`
+	CvcCvv         string    `db:"cvccvv"`
 }
 
-type EventType uint8
+type EventType string
 
-type EventStatus uint8
+type EventStatus string
 
 const (
-	Created EventType = iota
-	Updated
-	Removed
+	Created EventType = "Created"
+	Updated EventType = "Updated"
+	Removed EventType = "Removed"
+)
 
-	Deferred EventStatus = iota
-	Processed
+const (
+	New       EventStatus = "New"
+	Locked    EventStatus = "Locked"
+	Processed EventStatus = "Processed"
 )
 
 type CardEvent struct {

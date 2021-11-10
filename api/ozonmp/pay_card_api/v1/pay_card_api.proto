@@ -12,7 +12,7 @@ option go_package = "github.com/ozonmp/pay-card-api/pkg/pay-card-api;pay_card_ap
 // OmpTemplateApiService - Service for working with templates
 service PayCardApiService {
   // DescribeTemplateV1 - Describe a template
-  rpc CreateCard(CreateCardV1Request) returns (CreateCardV1Response) {
+  rpc CreateCard(Card) returns (CreateCardV1Response) {
     option (google.api.http) = {
       post: "/v1/cards"
     };
@@ -30,7 +30,7 @@ service PayCardApiService {
     };
   }
 
-  rpc ListCard(google.protobuf.Empty) returns (ListCardV1Response) {
+  rpc ListCard(ListCardV1Request) returns (ListCardV1Response) {
     option (google.api.http) = {
       get: "/v1/cards"
     };
@@ -42,18 +42,19 @@ message Card {
   string payment_system = 2 [(validate.rules).string.min_len = 3];
   string number = 3 [(validate.rules).string.len = 16];
   string holder_name = 4 [(validate.rules).string.min_len = 2];
-  string  CvcCvv = 5 [(validate.rules).string.len = 3];
+  string CvcCvv = 5 [(validate.rules).string.len = 3];
   google.protobuf.Timestamp expiration_date = 6 [(validate.rules).timestamp.required = true];
-}
-
-message CreateCardV1Request {
-  Card card = 1 [(validate.rules).message.required = true];
-  google.protobuf.Timestamp created = 2;
 }
 
 message RemoveCardV1Request {
   uint64 id = 1;
 }
+
+message ListCardV1Request {
+  uint64 offset = 1 [(validate.rules).uint64.gt = 0];
+  uint64 limit = 2 [(validate.rules).uint64 = { gte: 0, lte: 100 }];;
+}
+
 
 message DescribeCardV1Request {
   uint64 id = 1;

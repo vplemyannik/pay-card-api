@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	repo_cards "github.com/ozonmp/pay-card-api/internal/repo/cards"
+	repo_cards_events "github.com/ozonmp/pay-card-api/internal/repo/cards_events"
 	"net"
 	"net/http"
 	"os"
@@ -26,7 +28,6 @@ import (
 
 	"github.com/ozonmp/pay-card-api/internal/api"
 	"github.com/ozonmp/pay-card-api/internal/config"
-	"github.com/ozonmp/pay-card-api/internal/repo"
 	pb "github.com/ozonmp/pay-card-api/pkg/pay-card-api"
 )
 
@@ -107,9 +108,10 @@ func (s *GrpcServer) Start(cfg *config.Config) error {
 		)),
 	)
 
-	r := repo.NewRepo(s.db, s.batchSize)
+	repo := repo_cards.NewCardRepo(s.db)
+	repoEvents := repo_cards_events.NewCardEventsRepo(s.db)
 
-	pb.RegisterPayCardApiServiceServer(grpcServer, api.NewTemplateAPI(r))
+	pb.RegisterPayCardApiServiceServer(grpcServer, api.NewTemplateAPI(repo, repoEvents))
 	grpc_prometheus.EnableHandlingTimeHistogram()
 	grpc_prometheus.Register(grpcServer)
 

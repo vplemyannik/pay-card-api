@@ -32,13 +32,12 @@ status:
   versionPath: /version
 
 database:
-  host: postgres
+  host: localhost
   port: 5432
   user: docker
   password: docker
-  name: omp_template_api
+  name: pay_card_api
   sslmode: disable
-  migrations: migrations
   driver: pgx
 
 kafka:

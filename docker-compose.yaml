@@ -15,12 +15,12 @@ services:
       - ompnw
     depends_on:
       - postgres
-      - kafka
+#      - kafka
     links:
       - postgres
-      - kafka
+#      - kafka
     ports:
-      - 8080:8080 # REST
+      - 8085:8080 # REST
       - 8082:8082 # gRPC
       - 9100:9100 # Metrics prometheus
       - 8000:8000 # Status prometheus
@@ -53,7 +53,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: omp_template_api
+      POSTGRES_DB: pay_card_api
       APP_DB_USER: docker
       APP_DB_PASS: docker
     networks:
@@ -125,7 +125,7 @@ services:
     volumes:
       - ./swagger:/swagger
     environment:
-      SWAGGER_JSON: /swagger/ozonmp/omp_template_api/v1/omp_template_api.swagger.json
+      SWAGGER_JSON: /swagger/ozonmp/pay-card-api/v1/pay-card-api.swagger.json
     depends_on:
       - pay-card-api
     networks:

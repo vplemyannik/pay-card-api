@@ -141,100 +141,6 @@ var _ interface {
 	ErrorName() string
 } = CardValidationError{}
 
-// Validate checks the field values on CreateCardV1Request with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
-func (m *CreateCardV1Request) Validate() error {
-	if m == nil {
-		return nil
-	}
-
-	if m.GetCard() == nil {
-		return CreateCardV1RequestValidationError{
-			field:  "Card",
-			reason: "value is required",
-		}
-	}
-
-	if v, ok := interface{}(m.GetCard()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return CreateCardV1RequestValidationError{
-				field:  "Card",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if v, ok := interface{}(m.GetCreated()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return CreateCardV1RequestValidationError{
-				field:  "Created",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	return nil
-}
-
-// CreateCardV1RequestValidationError is the validation error returned by
-// CreateCardV1Request.Validate if the designated constraints aren't met.
-type CreateCardV1RequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e CreateCardV1RequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e CreateCardV1RequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e CreateCardV1RequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e CreateCardV1RequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e CreateCardV1RequestValidationError) ErrorName() string {
-	return "CreateCardV1RequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e CreateCardV1RequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sCreateCardV1Request.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = CreateCardV1RequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = CreateCardV1RequestValidationError{}
-
 // Validate checks the field values on RemoveCardV1Request with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, an error is returned.
@@ -303,6 +209,87 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = RemoveCardV1RequestValidationError{}
+
+// Validate checks the field values on ListCardV1Request with the rules defined
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
+func (m *ListCardV1Request) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if m.GetOffset() <= 0 {
+		return ListCardV1RequestValidationError{
+			field:  "Offset",
+			reason: "value must be greater than 0",
+		}
+	}
+
+	if val := m.GetLimit(); val < 0 || val > 100 {
+		return ListCardV1RequestValidationError{
+			field:  "Limit",
+			reason: "value must be inside range [0, 100]",
+		}
+	}
+
+	return nil
+}
+
+// ListCardV1RequestValidationError is the validation error returned by
+// ListCardV1Request.Validate if the designated constraints aren't met.
+type ListCardV1RequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListCardV1RequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListCardV1RequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListCardV1RequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListCardV1RequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListCardV1RequestValidationError) ErrorName() string {
+	return "ListCardV1RequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListCardV1RequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListCardV1Request.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListCardV1RequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListCardV1RequestValidationError{}
 
 // Validate checks the field values on DescribeCardV1Request with the rules
 // defined in the proto definition for this message. If any rules are
