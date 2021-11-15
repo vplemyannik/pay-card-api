@@ -360,6 +360,83 @@ var _ interface {
 	ErrorName() string
 } = DescribeCardV1RequestValidationError{}
 
+// Validate checks the field values on CreateCardV1Request with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *CreateCardV1Request) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if v, ok := interface{}(m.GetCard()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CreateCardV1RequestValidationError{
+				field:  "Card",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	return nil
+}
+
+// CreateCardV1RequestValidationError is the validation error returned by
+// CreateCardV1Request.Validate if the designated constraints aren't met.
+type CreateCardV1RequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreateCardV1RequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreateCardV1RequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreateCardV1RequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreateCardV1RequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreateCardV1RequestValidationError) ErrorName() string {
+	return "CreateCardV1RequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreateCardV1RequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreateCardV1Request.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreateCardV1RequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreateCardV1RequestValidationError{}
+
 // Validate checks the field values on CreateCardV1Response with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, an error is returned.

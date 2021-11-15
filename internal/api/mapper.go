@@ -7,7 +7,8 @@ import (
 	pb "github.com/ozonmp/pay-card-api/pkg/pay-card-api"
 )
 
-func MapCreateEvent(card *pb.Card) *model.CardEvent {
+func MapCreateEvent(req *pb.CreateCardV1Request) *model.CardEvent {
+	card := req.GetCard()
 	entity := &model.Card{
 		OwnerId:        card.GetOwnerId(),
 		PaymentSystem:  card.GetPaymentSystem(),

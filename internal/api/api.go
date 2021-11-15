@@ -34,7 +34,7 @@ func NewTemplateAPI(r repo_cards.Repo, repoEvents repo_cards_events.Repo) pb.Pay
 	return &cardAPI{repo: r, repoEvents: repoEvents}
 }
 
-func (a cardAPI) CreateCard(ctx context.Context, req *pb.Card) (*pb.CreateCardV1Response, error) {
+func (a cardAPI) CreateCard(ctx context.Context, req *pb.CreateCardV1Request) (*pb.CreateCardV1Response, error) {
 	if err := req.Validate(); err != nil {
 		log.Error().Err(err).Msg("CreateCardV1Request - invalid argument")
 

@@ -19,8 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PayCardApiServiceClient interface {
-	// DescribeTemplateV1 - Describe a template
-	CreateCard(ctx context.Context, in *Card, opts ...grpc.CallOption) (*CreateCardV1Response, error)
+	CreateCard(ctx context.Context, in *CreateCardV1Request, opts ...grpc.CallOption) (*CreateCardV1Response, error)
 	RemoveCard(ctx context.Context, in *RemoveCardV1Request, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	DescribeCard(ctx context.Context, in *DescribeCardV1Request, opts ...grpc.CallOption) (*Card, error)
 	ListCard(ctx context.Context, in *ListCardV1Request, opts ...grpc.CallOption) (*ListCardV1Response, error)
@@ -34,7 +33,7 @@ func NewPayCardApiServiceClient(cc grpc.ClientConnInterface) PayCardApiServiceCl
 	return &payCardApiServiceClient{cc}
 }
 
-func (c *payCardApiServiceClient) CreateCard(ctx context.Context, in *Card, opts ...grpc.CallOption) (*CreateCardV1Response, error) {
+func (c *payCardApiServiceClient) CreateCard(ctx context.Context, in *CreateCardV1Request, opts ...grpc.CallOption) (*CreateCardV1Response, error) {
 	out := new(CreateCardV1Response)
 	err := c.cc.Invoke(ctx, "/ozonmp.pay_card_api.v1.PayCardApiService/CreateCard", in, out, opts...)
 	if err != nil {
@@ -74,8 +73,7 @@ func (c *payCardApiServiceClient) ListCard(ctx context.Context, in *ListCardV1Re
 // All implementations must embed UnimplementedPayCardApiServiceServer
 // for forward compatibility
 type PayCardApiServiceServer interface {
-	// DescribeTemplateV1 - Describe a template
-	CreateCard(context.Context, *Card) (*CreateCardV1Response, error)
+	CreateCard(context.Context, *CreateCardV1Request) (*CreateCardV1Response, error)
 	RemoveCard(context.Context, *RemoveCardV1Request) (*emptypb.Empty, error)
 	DescribeCard(context.Context, *DescribeCardV1Request) (*Card, error)
 	ListCard(context.Context, *ListCardV1Request) (*ListCardV1Response, error)
@@ -86,7 +84,7 @@ type PayCardApiServiceServer interface {
 type UnimplementedPayCardApiServiceServer struct {
 }
 
-func (UnimplementedPayCardApiServiceServer) CreateCard(context.Context, *Card) (*CreateCardV1Response, error) {
+func (UnimplementedPayCardApiServiceServer) CreateCard(context.Context, *CreateCardV1Request) (*CreateCardV1Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateCard not implemented")
 }
 func (UnimplementedPayCardApiServiceServer) RemoveCard(context.Context, *RemoveCardV1Request) (*emptypb.Empty, error) {
@@ -112,7 +110,7 @@ func RegisterPayCardApiServiceServer(s grpc.ServiceRegistrar, srv PayCardApiServ
 }
 
 func _PayCardApiService_CreateCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Card)
+	in := new(CreateCardV1Request)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -124,7 +122,7 @@ func _PayCardApiService_CreateCard_Handler(srv interface{}, ctx context.Context,
 		FullMethod: "/ozonmp.pay_card_api.v1.PayCardApiService/CreateCard",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PayCardApiServiceServer).CreateCard(ctx, req.(*Card))
+		return srv.(PayCardApiServiceServer).CreateCard(ctx, req.(*CreateCardV1Request))
 	}
 	return interceptor(ctx, in, info, handler)
 }

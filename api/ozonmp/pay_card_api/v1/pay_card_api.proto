@@ -9,12 +9,13 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/ozonmp/pay-card-api/pkg/pay-card-api;pay_card_api";
 
-// OmpTemplateApiService - Service for working with templates
+// PayCardApiService - Service for working with cards
 service PayCardApiService {
-  // DescribeTemplateV1 - Describe a template
-  rpc CreateCard(Card) returns (CreateCardV1Response) {
+
+  rpc CreateCard(CreateCardV1Request) returns (CreateCardV1Response) {
     option (google.api.http) = {
-      post: "/v1/cards"
+      post: "/v1/cards",
+      body: "*"
     };
   }
 
@@ -58,6 +59,10 @@ message ListCardV1Request {
 
 message DescribeCardV1Request {
   uint64 id = 1;
+}
+
+message CreateCardV1Request {
+  Card card = 1;
 }
 
 message CreateCardV1Response {
