@@ -3,9 +3,10 @@ package api
 import (
 	"context"
 	"github.com/ozonmp/pay-card-api/internal/model"
+	"github.com/ozonmp/pay-card-api/internal/pkg/logger"
 	"github.com/ozonmp/pay-card-api/internal/repo/cards"
 	repo_cards_events "github.com/ozonmp/pay-card-api/internal/repo/cards_events"
-	"github.com/rs/zerolog/log"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -36,12 +37,12 @@ func NewTemplateAPI(r repo_cards.Repo, repoEvents repo_cards_events.Repo) pb.Pay
 
 func (a cardAPI) CreateCard(ctx context.Context, req *pb.CreateCardV1Request) (*pb.CreateCardV1Response, error) {
 	if err := req.Validate(); err != nil {
-		log.Error().Err(err).Msg("CreateCardV1Request - invalid argument")
+		logger.WarnKV(ctx, "CreateCardV1Request - invalid argument", "err", err)
 
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	log.Debug().Msg("CreateCard request happens")
+	logger.InfoKV(ctx, "CreateCard request happens")
 
 	createEvent := MapCreateEvent(req)
 
@@ -64,12 +65,12 @@ func (a cardAPI) CreateCard(ctx context.Context, req *pb.CreateCardV1Request) (*
 
 func (a cardAPI) RemoveCard(ctx context.Context, req *pb.RemoveCardV1Request) (*emptypb.Empty, error) {
 	if err := req.Validate(); err != nil {
-		log.Error().Err(err).Msg("RemoveCardV1Request - invalid argument")
+		logger.WarnKV(ctx, "RemoveCardV1Request - invalid argument", "err", err)
 
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	log.Debug().Msg("RemoveCard request happens")
+	logger.InfoKV(ctx, "RemoveCard request happens")
 
 	removeEvent := MapRemoveEvent(req)
 
@@ -88,12 +89,12 @@ func (a cardAPI) RemoveCard(ctx context.Context, req *pb.RemoveCardV1Request) (*
 
 func (a cardAPI) DescribeCard(ctx context.Context, req *pb.DescribeCardV1Request) (*pb.Card, error) {
 	if err := req.Validate(); err != nil {
-		log.Error().Err(err).Msg("DescribeCardV1Request - invalid argument")
+		logger.WarnKV(ctx, "DescribeCardV1Request - invalid argument", "err", err)
 
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	log.Debug().Msg("DescribeCard request happens")
+	logger.InfoKV(ctx, "DescribeCard request happens")
 
 	card, err := a.repo.Get(req.GetId())
 	if err != nil {
@@ -114,12 +115,12 @@ func (a cardAPI) DescribeCard(ctx context.Context, req *pb.DescribeCardV1Request
 
 func (a cardAPI) ListCard(ctx context.Context, req *pb.ListCardV1Request) (*pb.ListCardV1Response, error) {
 	if err := req.Validate(); err != nil {
-		log.Error().Err(err).Msg("ListCard - invalid argument")
+		logger.WarnKV(ctx, "ListCardV1Request - invalid argument", "err", err)
 
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	log.Debug().Msg("ListCard request happens")
+	logger.InfoKV(ctx, "ListCard request happens")
 
 	cards, err := a.repo.List(req.GetOffset(), req.GetLimit())
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ozonmp/pay-card-api/internal/pkg/logger"
 	repo_cards "github.com/ozonmp/pay-card-api/internal/repo/cards"
 	repo_cards_events "github.com/ozonmp/pay-card-api/internal/repo/cards_events"
 	"net"
@@ -15,7 +16,6 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
@@ -57,9 +57,9 @@ func (s *GrpcServer) Start(cfg *config.Config) error {
 	gatewayServer := createGatewayServer(grpcAddr, gatewayAddr)
 
 	go func() {
-		log.Info().Msgf("Gateway server is running on %s", gatewayAddr)
+		logger.InfoKV(ctx, fmt.Sprintf("Gateway server is running on %s", gatewayAddr))
 		if err := gatewayServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Error().Err(err).Msg("Failed running gateway server")
+			logger.ErrorKV(ctx, "Failed running gateway server")
 			cancel()
 		}
 	}()
@@ -67,9 +67,9 @@ func (s *GrpcServer) Start(cfg *config.Config) error {
 	metricsServer := createMetricsServer(cfg)
 
 	go func() {
-		log.Info().Msgf("Metrics server is running on %s", metricsAddr)
+		logger.InfoKV(ctx, fmt.Sprintf("Metrics server is running on %s", metricsAddr))
 		if err := metricsServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Error().Err(err).Msg("Failed running metrics server")
+			logger.ErrorKV(ctx, "Failed running metrics server")
 			cancel()
 		}
 	}()
@@ -81,9 +81,9 @@ func (s *GrpcServer) Start(cfg *config.Config) error {
 
 	go func() {
 		statusAdrr := fmt.Sprintf("%s:%v", cfg.Status.Host, cfg.Status.Port)
-		log.Info().Msgf("Status server is running on %s", statusAdrr)
+		logger.InfoKV(ctx, fmt.Sprintf("Status server is running on %s", statusAdrr))
 		if err := statusServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Error().Err(err).Msg("Failed running status server")
+			logger.ErrorKV(ctx, "Failed running status server")
 		}
 	}()
 
@@ -116,16 +116,16 @@ func (s *GrpcServer) Start(cfg *config.Config) error {
 	grpc_prometheus.Register(grpcServer)
 
 	go func() {
-		log.Info().Msgf("GRPC Server is listening on: %s", grpcAddr)
+		logger.InfoKV(ctx, fmt.Sprintf("Gateway server is running on %s", gatewayAddr))
 		if err := grpcServer.Serve(l); err != nil {
-			log.Fatal().Err(err).Msg("Failed running gRPC server")
+			logger.ErrorKV(ctx, "Failed running gateway server")
 		}
 	}()
 
 	go func() {
 		time.Sleep(2 * time.Second)
 		isReady.Store(true)
-		log.Info().Msg("The service is ready to accept requests")
+		logger.InfoKV(ctx, "The service is ready to accept requests")
 	}()
 
 	if cfg.Project.Debug {
@@ -137,33 +137,33 @@ func (s *GrpcServer) Start(cfg *config.Config) error {
 
 	select {
 	case v := <-quit:
-		log.Info().Msgf("signal.Notify: %v", v)
+		logger.InfoKV(ctx, fmt.Sprintf("signal.Notify: %v", v))
 	case done := <-ctx.Done():
-		log.Info().Msgf("ctx.Done: %v", done)
+		logger.InfoKV(ctx, fmt.Sprintf("ctx.Done: %v", done))
 	}
 
 	isReady.Store(false)
 
 	if err := gatewayServer.Shutdown(ctx); err != nil {
-		log.Error().Err(err).Msg("gatewayServer.Shutdown")
+		logger.ErrorKV(ctx, "gatewayServer.Shutdown")
 	} else {
-		log.Info().Msg("gatewayServer shut down correctly")
+		logger.InfoKV(ctx, "gatewayServer shut down correctly")
 	}
 
 	if err := statusServer.Shutdown(ctx); err != nil {
-		log.Error().Err(err).Msg("statusServer.Shutdown")
+		logger.ErrorKV(ctx, "statusServer.Shutdown")
 	} else {
-		log.Info().Msg("statusServer shut down correctly")
+		logger.InfoKV(ctx, "statusServer shut down correctly")
 	}
 
 	if err := metricsServer.Shutdown(ctx); err != nil {
-		log.Error().Err(err).Msg("metricsServer.Shutdown")
+		logger.ErrorKV(ctx, "metricsServer.Shutdown")
 	} else {
-		log.Info().Msg("metricsServer shut down correctly")
+		logger.InfoKV(ctx, "metricsServer shut down correctly")
 	}
 
 	grpcServer.GracefulStop()
-	log.Info().Msgf("grpcServer shut down correctly")
+	logger.InfoKV(ctx, "grpcServer shut down correctly")
 
 	return nil
 }
