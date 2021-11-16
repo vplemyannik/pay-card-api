@@ -7,14 +7,18 @@ import (
 	_ "github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	_ "github.com/lib/pq"
+	"github.com/opentracing/opentracing-go"
 	"github.com/ozonmp/pay-card-api/internal/config"
 	"github.com/ozonmp/pay-card-api/internal/database"
 	"github.com/ozonmp/pay-card-api/internal/pkg/logger"
 	"github.com/ozonmp/pay-card-api/internal/server"
 	"github.com/ozonmp/pay-card-api/internal/tracer"
 	gelf "github.com/snovichkov/zap-gelf"
+	"github.com/uber/jaeger-client-go"
+	jaegercfg "github.com/uber/jaeger-client-go/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"io"
 	"os"
 )
 
@@ -41,6 +45,9 @@ func main() {
 
 	syncLogger := initLogger(ctx, cfg)
 	defer syncLogger()
+
+	closer := initTracer(ctx, cfg)
+	defer closer.Close()
 
 	db, err := database.NewPostgres(cfg.Database.GetDSN(), cfg.Database.Driver)
 	if err != nil {
@@ -93,4 +100,28 @@ func initLogger(ctx context.Context, cfg config.Config) (syncFn func()) {
 	return func() {
 		notSugaredLogger.Sync()
 	}
+}
+
+func initTracer(ctx context.Context, cfg config.Config) (closer io.Closer) {
+	// Sample configuration for testing. Use constant sampling to sample every trace
+	// and enable LogSpan to log every span via configured Logger.
+	jcfg := jaegercfg.Configuration{
+		ServiceName: cfg.Project.ServiceName,
+		Sampler: &jaegercfg.SamplerConfig{
+			Type:  jaeger.SamplerTypeConst,
+			Param: 1,
+		},
+		Reporter: &jaegercfg.ReporterConfig{
+			LogSpans: true,
+		},
+	}
+
+	// Initialize tracer with a logger and a metrics factory
+	tracer, closer, err := jcfg.NewTracer()
+	if err != nil {
+		logger.FatalKV(ctx, "cfg.NewTracer()", "err", err)
+	}
+	// Set the singleton opentracing.Tracer with the Jaeger tracer.
+	opentracing.SetGlobalTracer(tracer)
+	return closer
 }
