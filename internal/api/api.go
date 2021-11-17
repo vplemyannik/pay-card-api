@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/ozonmp/pay-card-api/internal/model"
 	"github.com/ozonmp/pay-card-api/internal/pkg/logger"
+	"github.com/ozonmp/pay-card-api/internal/pkg/metrics"
 	"github.com/ozonmp/pay-card-api/internal/repo/cards"
 	repo_cards_events "github.com/ozonmp/pay-card-api/internal/repo/cards_events"
 
@@ -43,10 +44,11 @@ func (a cardAPI) CreateCard(ctx context.Context, req *pb.CreateCardV1Request) (*
 	}
 
 	logger.InfoKV(ctx, "CreateCard request happens")
+	metrics.IncrementCUDCardOperationsTotalCount(metrics.Create)
 
 	createEvent := MapCreateEvent(req)
 
-	id, err := a.repo.Add(createEvent.Entity)
+	id, err := a.repo.Add(ctx, createEvent.Entity)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -71,6 +73,7 @@ func (a cardAPI) RemoveCard(ctx context.Context, req *pb.RemoveCardV1Request) (*
 	}
 
 	logger.InfoKV(ctx, "RemoveCard request happens")
+	metrics.IncrementCUDCardOperationsTotalCount(metrics.Delete)
 
 	removeEvent := MapRemoveEvent(req)
 
@@ -99,6 +102,11 @@ func (a cardAPI) DescribeCard(ctx context.Context, req *pb.DescribeCardV1Request
 	card, err := a.repo.Get(req.GetId())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if card == nil {
+		metrics.IncrementNotFoundCardTotalCount()
+		return nil, status.Error(codes.NotFound, "card not found")
 	}
 
 	response := &pb.Card{

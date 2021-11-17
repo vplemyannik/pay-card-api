@@ -163,35 +163,35 @@ services:
     networks:
       - ompnw
 
-#  prometheus:
-#    image: prom/prometheus:latest
-#    restart: unless-stopped
-#    logging:
-#      driver: 'gelf'
-#      options:
-#        gelf-address: 'udp://localhost:12201'
-#        tag: prometheus
-#    ports:
-#      - 9090:9090
-#    networks:
-#      - ompnw
-#    volumes:
-#      - "./prometheus.yml:/etc/prometheus/prometheus.yml"
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    logging:
+      driver: 'gelf'
+      options:
+        gelf-address: 'udp://localhost:12201'
+        tag: prometheus
+    ports:
+      - 9090:9090
+    networks:
+      - ompnw
+    volumes:
+      - "./prometheus.yml:/etc/prometheus/prometheus.yml"
 
-#  grafana:
-#    image: grafana/grafana:latest
-#    restart: unless-stopped
-#    ports:
-#      - 3000:3000
-#    links:
-#      - prometheus
-#    environment:
-#      - GF_SECURITY_ADMIN_PASSWORD=MYPASSWORT
-#      - GF_USERS_ALLOW_SIGN_UP=false
-#    networks:
-#      - ompnw
-#    volumes:
-#      - "./data/grafana:/var/lib/grafana"
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    ports:
+      - 3000:3000
+    links:
+      - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=MYPASSWORT
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - ompnw
+    volumes:
+      - "./data/grafana:/var/lib/grafana"
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2
