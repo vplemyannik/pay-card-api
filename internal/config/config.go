@@ -1,10 +1,10 @@
 package config
 
 import (
+	"fmt"
+	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
-
-	"gopkg.in/yaml.v3"
 )
 
 // Build information -ldflags .
@@ -26,14 +26,13 @@ func GetConfigInstance() Config {
 
 // Database - contains all parameters database connection.
 type Database struct {
-	Host       string `yaml:"host"`
-	Port       string `yaml:"port"`
-	User       string `yaml:"user"`
-	Password   string `yaml:"password"`
-	Migrations string `yaml:"migrations"`
-	Name       string `yaml:"name"`
-	SslMode    string `yaml:"sslmode"`
-	Driver     string `yaml:"driver"`
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+	Name     string `yaml:"name"`
+	SslMode  string `yaml:"sslmode"`
+	Driver   string `yaml:"driver"`
 }
 
 // Grpc - contains parameter address grpc.
@@ -126,4 +125,17 @@ func ReadConfigYML(filePath string) error {
 	cfg.Project.CommitHash = commitHash
 
 	return nil
+}
+
+func (db *Database) GetDSN() string {
+	dsn := fmt.Sprintf("host=%v port=%v user=%v password=%v dbname=%v sslmode=%v",
+		db.Host,
+		db.Port,
+		db.User,
+		db.Password,
+		db.Name,
+		db.SslMode,
+	)
+
+	return dsn
 }

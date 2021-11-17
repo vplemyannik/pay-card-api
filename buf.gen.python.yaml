@@ -1,22 +1,22 @@
 version: v1
 plugins:
   - name: python
-    out: pypkg/omp-template-api
+    out: pypkg/pay-card-api
     strategy: directory
 
-  - name: grpclib_python
-    out: pypkg/omp-template-api
-    strategy: directory
+#  - name: grpclib_python
+#    out: pypkg/pay-card-api
+#    strategy: directory
 
   - name: grpc-gateway
-    out: pkg/omp-template-api
+    out: pkg/pay-card-api
     opt:
       - logtostderr=true
       - paths=import
     strategy: directory
 
   - name: validate
-    out: pkg/omp-template-api
+    out: pkg/pay-card-api
     opt:
       - lang=go
     strategy: directory

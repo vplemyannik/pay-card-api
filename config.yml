@@ -20,7 +20,7 @@ metrics:
   path: /metrics
 
 jaeger:
-  service: "omp-template-api"
+  service: "pay-card-api"
   host: "jaeger"
   port: ":6831"
 
@@ -36,15 +36,14 @@ database:
   port: 5432
   user: docker
   password: docker
-  name: omp_template_api
+  name: pay_card_api
   sslmode: disable
-  migrations: migrations
   driver: pgx
 
 kafka:
   capacity: 512
   topic: "omp-template-events"
-  groupId: "omp-template-api"
+  groupId: "pay-card-api"
   brokers:
     - "kafka:9092"
     - "localhost:9094"

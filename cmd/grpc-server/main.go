@@ -2,9 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
-
-	"github.com/pressly/goose/v3"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
@@ -12,10 +9,10 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 	_ "github.com/lib/pq"
 
-	"github.com/ozonmp/omp-template-api/internal/config"
-	"github.com/ozonmp/omp-template-api/internal/database"
-	"github.com/ozonmp/omp-template-api/internal/server"
-	"github.com/ozonmp/omp-template-api/internal/tracer"
+	"github.com/ozonmp/pay-card-api/internal/config"
+	"github.com/ozonmp/pay-card-api/internal/database"
+	"github.com/ozonmp/pay-card-api/internal/server"
+	"github.com/ozonmp/pay-card-api/internal/tracer"
 )
 
 var (
@@ -28,7 +25,6 @@ func main() {
 	}
 	cfg := config.GetConfigInstance()
 
-	migration := flag.Bool("migration", true, "Defines the migration start option")
 	flag.Parse()
 
 	log.Info().
@@ -43,29 +39,11 @@ func main() {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
 
-	dsn := fmt.Sprintf("host=%v port=%v user=%v password=%v dbname=%v sslmode=%v",
-		cfg.Database.Host,
-		cfg.Database.Port,
-		cfg.Database.User,
-		cfg.Database.Password,
-		cfg.Database.Name,
-		cfg.Database.SslMode,
-	)
-
-	db, err := database.NewPostgres(dsn, cfg.Database.Driver)
+	db, err := database.NewPostgres(cfg.Database.GetDSN(), cfg.Database.Driver)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed init postgres")
 	}
 	defer db.Close()
-
-	*migration = false // todo: need to delete this line for homework-4
-	if *migration {
-		if err = goose.Up(db.DB, cfg.Database.Migrations); err != nil {
-			log.Error().Err(err).Msg("Migration failed")
-
-			return
-		}
-	}
 
 	tracing, err := tracer.NewTracer(&cfg)
 	if err != nil {

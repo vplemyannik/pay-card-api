@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package ozonmp.pay_card_api.v1;
+
+import "google/protobuf/empty.proto";
+import "validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/ozonmp/pay-card-api/pkg/pay-card-api;pay_card_api";
+
+// PayCardApiService - Service for working with cards
+service PayCardApiService {
+
+  rpc CreateCard(CreateCardV1Request) returns (CreateCardV1Response) {
+    option (google.api.http) = {
+      post: "/v1/cards",
+      body: "*"
+    };
+  }
+
+  rpc RemoveCard(RemoveCardV1Request) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/cards/{id}"
+    };
+  }
+
+  rpc DescribeCard(DescribeCardV1Request) returns (Card) {
+    option (google.api.http) = {
+      get: "/v1/cards/{id}"
+    };
+  }
+
+  rpc ListCard(ListCardV1Request) returns (ListCardV1Response) {
+    option (google.api.http) = {
+      get: "/v1/cards"
+    };
+  }
+}
+
+message Card {
+  uint64 owner_id = 1 [(validate.rules).uint64.gt = 0];
+  string payment_system = 2 [(validate.rules).string.min_len = 3];
+  string number = 3 [(validate.rules).string.len = 16];
+  string holder_name = 4 [(validate.rules).string.min_len = 2];
+  string CvcCvv = 5 [(validate.rules).string.len = 3];
+  google.protobuf.Timestamp expiration_date = 6 [(validate.rules).timestamp.required = true];
+}
+
+message RemoveCardV1Request {
+  uint64 id = 1;
+}
+
+message ListCardV1Request {
+  uint64 offset = 1 [(validate.rules).uint64.gt = 0];
+  uint64 limit = 2 [(validate.rules).uint64 = { gte: 0, lte: 100 }];;
+}
+
+
+message DescribeCardV1Request {
+  uint64 id = 1;
+}
+
+message CreateCardV1Request {
+  Card card = 1;
+}
+
+message CreateCardV1Response {
+  uint64 id = 1;
+}
+
+message ListCardV1Response {
+  repeated Card cards = 1;
+}
