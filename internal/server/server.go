@@ -7,6 +7,7 @@ import (
 	"github.com/ozonmp/pay-card-api/internal/pkg/logger"
 	repo_cards "github.com/ozonmp/pay-card-api/internal/repo/cards"
 	repo_cards_events "github.com/ozonmp/pay-card-api/internal/repo/cards_events"
+	"github.com/ozonmp/pay-card-api/internal/server/middleware"
 	"net"
 	"net/http"
 	"os"
@@ -105,6 +106,7 @@ func (s *GrpcServer) Start(cfg *config.Config) error {
 			grpc_prometheus.UnaryServerInterceptor,
 			grpc_opentracing.UnaryServerInterceptor(),
 			grpcrecovery.UnaryServerInterceptor(),
+			middleware.LogLevelSwitchInterceptor(),
 		)),
 	)
 
