@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package events;
+
+option go_package = "github.com/ozonmp/pay-card-api/pkg/events;events";
+
+import "google/protobuf/timestamp.proto";
+
+message Card {
+  uint64 card_id = 1;
+  uint64 owner_id = 2;
+  string payment_system = 3;
+  string number = 4;
+  string holder_name = 5;
+  string CvcCvv = 6;
+  google.protobuf.Timestamp expiration_date = 7;
+}
+message UpdateCard {
+  uint64 card_id = 1;
+  optional uint64 owner_id = 2;
+  optional string payment_system = 3;
+  optional string number = 4;
+  optional string holder_name = 5;
+  optional string CvcCvv = 6;
+  optional google.protobuf.Timestamp expiration_date = 7;
+}
+
+
+message CardCreated {
+  Card card = 1;
+  google.protobuf.Timestamp created_at = 2;
+}
+
+message CardUpdated {
+  UpdateCard card = 1;
+  google.protobuf.Timestamp updated_at = 2;
+}
+
+message CardDeleted {
+  uint64 card_id = 1;
+  google.protobuf.Timestamp removed_at = 2;
+}
