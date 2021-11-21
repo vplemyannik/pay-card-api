@@ -1,6 +1,8 @@
 package model
 
-import "time"
+import (
+	"time"
+)
 
 type Card struct {
 	CardId         uint64    `db:"id"`
@@ -29,8 +31,9 @@ const (
 )
 
 type CardEvent struct {
-	ID     uint64
-	Type   EventType
-	Status EventStatus
-	Entity *Card
+	ID        uint64
+	Type      EventType
+	Status    EventStatus
+	Entity    Card
+	OccuredAt time.Time
 }

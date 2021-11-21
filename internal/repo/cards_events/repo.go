@@ -40,7 +40,7 @@ const (
 
 func (r repo) Lock(n uint64) ([]model.CardEvent, error) {
 
-	var events []model.CardEvent
+	events := make([]model.CardEvent, 0, n)
 
 	ctx := context.Background()
 	err := db.WithTx(ctx, r.db, func(ctx context.Context, tx *sqlx.Tx) error {
@@ -49,11 +49,18 @@ func (r repo) Lock(n uint64) ([]model.CardEvent, error) {
 			return errors.Wrap(err, "database.WithTx")
 		}
 
-		query := psql.Select("*").
-			From("cards_events").
-			Where("status = 'New'").
-			Limit(n).
-			OrderBy("updated_at ASC").
+		query := psql.Update("cards_events").
+			Set("status", model.Locked).
+			Where(sq.Select("id").
+				Prefix("id IN (").
+				From("cards_events").
+				Where(sq.Or{
+					sq.Eq{"status": model.New},
+				}).
+				OrderBy("updated_at ASC").
+				Limit(n).
+				Suffix(")")).
+			Suffix("RETURNING *").
 			RunWith(r.db)
 
 		sql, args, err := query.ToSql()
@@ -61,25 +68,19 @@ func (r repo) Lock(n uint64) ([]model.CardEvent, error) {
 			return err
 		}
 
-		var res []model.CardEvent
+		var res []CardEventDb
 		err = r.db.Select(&res, sql, args...)
 		if err != nil {
 			return err
 		}
 
-		ids := make([]uint64, 0, len(res))
-		for _, ev := range res {
-			ids = append(ids, ev.ID)
+		for _, event := range res {
+			mappedEvent, err := mapToDomain(event)
+			if err != nil {
+				return err
+			}
+			events = append(events, *mappedEvent)
 		}
-
-		updateQuery := psql.Update("cards_events").
-			Set("status", Locked).
-			Where(sq.Eq{"id": ids}).
-			RunWith(r.db)
-
-		_, err = updateQuery.Exec()
-
-		events = res
 
 		return nil
 	})
@@ -106,7 +107,7 @@ func (r repo) Add(events []model.CardEvent) error {
 	updated := time.Now()
 	for _, event := range events {
 		if payload, err := json.Marshal(event.Entity); err == nil {
-			query = query.Values(event.ID, event.Type, event.Status, payload, updated)
+			query = query.Values(event.Entity.CardId, event.Type, event.Status, payload, updated)
 		} else {
 			return err
 		}
@@ -129,4 +130,23 @@ func (r repo) Remove(eventIDs []uint64) error {
 	}
 	_, err = r.db.Exec(s, args...)
 	return err
+}
+
+func mapToDomain(eventDb CardEventDb) (*model.CardEvent, error) {
+	var card model.Card
+	if eventDb.Payload.Valid {
+		if err := json.Unmarshal([]byte(eventDb.Payload.String), &card); err != nil {
+			return nil, err
+		}
+	}
+
+	card.CardId = eventDb.CardId
+
+	return &CardEvent{
+		ID:        eventDb.ID,
+		Type:      eventDb.Type,
+		Status:    eventDb.Status,
+		Entity:    card,
+		OccuredAt: eventDb.UpdatedAt,
+	}, nil
 }

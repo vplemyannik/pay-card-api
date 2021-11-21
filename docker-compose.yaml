@@ -75,60 +75,60 @@ services:
     networks:
       - ompnw
 
-#  zookeeper:
-#    image: confluentinc/cp-zookeeper
-#    restart: unless-stopped
-#    logging:
-#      driver: 'gelf'
-#      options:
-#        gelf-address: 'udp://localhost:12201'
-#        tag: zookeeper
-#    ports:
-#      - 2181:2181
-#    environment:
-#      zk_id: "1"
-#      ZOOKEEPER_CLIENT_PORT: 32181
-#      ZOOKEEPER_TICK_TIME: 2000
-#      ZOOKEEPER_SYNC_LIMIT: 2
-#    networks:
-#      - ompnw
+  zookeeper:
+    image: confluentinc/cp-zookeeper
+    restart: unless-stopped
+    logging:
+      driver: 'gelf'
+      options:
+        gelf-address: 'udp://localhost:12201'
+        tag: zookeeper
+    ports:
+      - 2181:2181
+    environment:
+      zk_id: "1"
+      ZOOKEEPER_CLIENT_PORT: 32181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SYNC_LIMIT: 2
+    networks:
+      - ompnw
 
-#  kafka:
-#    image: confluentinc/cp-kafka
-#    restart: unless-stopped
-#    logging:
-#      driver: 'gelf'
-#      options:
-#        gelf-address: 'udp://localhost:12201'
-#        tag: kafka
-#    depends_on:
-#      - zookeeper
-#    ports:
-#      - 9094:9094
-#    environment:
-#      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:32181"
-#      KAFKA_LISTENERS: INTERNAL://kafka:9092,OUTSIDE://kafka:9094
-#      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,OUTSIDE://localhost:9094
-#      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
-#      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-#      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-#    command: sh -c "((sleep 15 && kafka-topics --create --zookeeper zookeeper:32181 --replication-factor 1 --partitions 1 --topic templates)&) && /etc/confluent/docker/run"
-#    networks:
-#      - ompnw
+  kafka:
+    image: confluentinc/cp-kafka
+    restart: unless-stopped
+    logging:
+      driver: 'gelf'
+      options:
+        gelf-address: 'udp://localhost:12201'
+        tag: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - 9094:9094
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:32181"
+      KAFKA_LISTENERS: INTERNAL://kafka:9092,OUTSIDE://kafka:9094
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,OUTSIDE://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    command: sh -c "((sleep 15 && kafka-topics --create --zookeeper zookeeper:32181 --replication-factor 1 --partitions 1 --topic templates)&) && /etc/confluent/docker/run"
+    networks:
+      - ompnw
 
-#  kafka-ui:
-#    image: obsidiandynamics/kafdrop
-#    restart: unless-stopped
-#    depends_on:
-#      - kafka
-#    ports:
-#      - 9001:9001
-#    environment:
-#      SERVER_PORT: 9001
-#      KAFKA_BROKERCONNECT: "kafka:9092"
-#      JVM_OPTS: "-Xms16M -Xmx48M -Xss180K -XX:-TieredCompilation -XX:+UseStringDeduplication -noverify"
-#    networks:
-#      - ompnw
+  kafka-ui:
+    image: obsidiandynamics/kafdrop
+    restart: unless-stopped
+    depends_on:
+      - kafka
+    ports:
+      - 9001:9001
+    environment:
+      SERVER_PORT: 9001
+      KAFKA_BROKERCONNECT: "kafka:9092"
+      JVM_OPTS: "-Xms16M -Xmx48M -Xss180K -XX:-TieredCompilation -XX:+UseStringDeduplication -noverify"
+    networks:
+      - ompnw
 
   swagger-ui:
     image: swaggerapi/swagger-ui

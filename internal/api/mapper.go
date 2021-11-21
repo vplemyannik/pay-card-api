@@ -9,7 +9,7 @@ import (
 
 func MapCreateEvent(req *pb.CreateCardV1Request) *model.CardEvent {
 	card := req.GetCard()
-	entity := &model.Card{
+	entity := model.Card{
 		OwnerId:        card.GetOwnerId(),
 		PaymentSystem:  card.GetPaymentSystem(),
 		ExpirationDate: card.GetExpirationDate().AsTime(),
@@ -30,7 +30,7 @@ func MapRemoveEvent(r *pb.RemoveCardV1Request) *model.CardEvent {
 	return &model.CardEvent{
 		Type:   model.Removed,
 		Status: model.New,
-		Entity: &model.Card{
+		Entity: model.Card{
 			CardId: cardId,
 		},
 	}

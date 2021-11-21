@@ -50,7 +50,8 @@ func (a cardAPI) CreateCard(ctx context.Context, req *pb.CreateCardV1Request) (*
 
 	createEvent := MapCreateEvent(req)
 
-	id, err := a.repo.Add(ctx, createEvent.Entity)
+	id, err := a.repo.Add(ctx, &createEvent.Entity)
+	createEvent.Entity.CardId = id
 	if err != nil {
 		card := req.GetCard()
 		notifySpan.SetTag("CreateCardV1Request - error occured when create card", err).

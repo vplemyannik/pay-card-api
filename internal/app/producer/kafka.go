@@ -55,7 +55,7 @@ func (p *producer) Start() {
 	for i := uint64(0); i < p.n; i++ {
 		p.wg.Add(1)
 		go func() {
-			chunk := make([]model.CardEvent, 0, 20)
+			chunk := make([]model.CardEvent, 0, 1)
 			defer p.wg.Done()
 			for {
 				select {
