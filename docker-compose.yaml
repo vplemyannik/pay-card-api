@@ -20,7 +20,7 @@ services:
       - postgres
 #      - kafka
     ports:
-      - 8085:8080 # REST
+      - 8080:8080 # REST
       - 8082:8082 # gRPC
       - 9100:9100 # Metrics prometheus
       - 8000:8000 # Status prometheus
@@ -33,7 +33,7 @@ services:
       start_period: 20s
     volumes:
       - ./migrations:/root/migrations
-      - ./config.yml:/root/config.yml
+      - ./config.docker.yml:/root/config.yml
 
   postgres:
     image: postgres:latest
@@ -65,7 +65,7 @@ services:
   reverseproxy:
     image: nginx
     ports:
-      - "8080:8080"
+      - "8085:8080"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
     depends_on:
@@ -144,109 +144,115 @@ services:
     networks:
       - ompnw
 
-#  jaeger:
-#    image: jaegertracing/all-in-one
-#    restart: unless-stopped
-#    logging:
-#      driver: 'gelf'
-#      options:
-#        gelf-address: 'udp://localhost:12201'
-#        tag: jaeger
-#    ports:
-#      - 6831:6831/udp
-#      - 16686:16686
-#    networks:
-#      - ompnw
+  jaeger:
+    image: jaegertracing/all-in-one
+    restart: unless-stopped
+    logging:
+      driver: 'gelf'
+      options:
+        gelf-address: 'udp://localhost:12201'
+        tag: jaeger
+    ports:
+      - 5775:5775/udp
+      - 6831:6831/udp
+      - 6832:6832/udp
+      - 5778:5778
+      - 16686:16686
+      - 14268:14268
+      - 14250:14250
+    networks:
+      - ompnw
 
-#  prometheus:
-#    image: prom/prometheus:latest
-#    restart: unless-stopped
-#    logging:
-#      driver: 'gelf'
-#      options:
-#        gelf-address: 'udp://localhost:12201'
-#        tag: prometheus
-#    ports:
-#      - 9090:9090
-#    networks:
-#      - ompnw
-#    volumes:
-#      - "./prometheus.yml:/etc/prometheus/prometheus.yml"
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    logging:
+      driver: 'gelf'
+      options:
+        gelf-address: 'udp://localhost:12201'
+        tag: prometheus
+    ports:
+      - 9090:9090
+    networks:
+      - ompnw
+    volumes:
+      - "./prometheus.yml:/etc/prometheus/prometheus.yml"
 
-#  grafana:
-#    image: grafana/grafana:latest
-#    restart: unless-stopped
-#    ports:
-#      - 3000:3000
-#    links:
-#      - prometheus
-#    environment:
-#      - GF_SECURITY_ADMIN_PASSWORD=MYPASSWORT
-#      - GF_USERS_ALLOW_SIGN_UP=false
-#    networks:
-#      - ompnw
-#    volumes:
-#      - "./data/grafana:/var/lib/grafana"
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    ports:
+      - 3000:3000
+    links:
+      - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=MYPASSWORT
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - ompnw
+    volumes:
+      - "./data/grafana:/var/lib/grafana"
 
-#  elasticsearch:
-#    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2
-#    environment:
-#      - http.host=0.0.0.0
-#      - transport.host=localhost
-#      - network.host=0.0.0.0
-#      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-#    ulimits:
-#      memlock:
-#        soft: -1
-#        hard: -1
-#    deploy:
-#      resources:
-#        limits:
-#          memory: 1g
-#    networks:
-#      - ompnw
-#    volumes:
-#      - esdata:/usr/share/elasticsearch/data
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2
+    environment:
+      - http.host=0.0.0.0
+      - transport.host=localhost
+      - network.host=0.0.0.0
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+    networks:
+      - ompnw
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
   # Elasticsearch: https://www.elastic.co/guide/en/elasticsearch/reference/6.x/docker.html
 
-#  mongo:
-#    image: mongo:4.2
-#    restart: always
-#    networks:
-#      - ompnw
-#    volumes:
-#      - mongodata:/data/db
+  mongo:
+    image: mongo:4.2
+    restart: always
+    networks:
+      - ompnw
+    volumes:
+      - mongodata:/data/db
 
   # Graylog: https://hub.docker.com/r/graylog/graylog/
-#  graylog:
-#    image: graylog/graylog:4.0
-#    environment:
-#      # CHANGE ME (must be at least 16 characters)!
-#      - GRAYLOG_PASSWORD_SECRET=somepasswordpepper
-#      # Password: admin
-#      - GRAYLOG_ROOT_PASSWORD_SHA2=8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
-#      - GRAYLOG_HTTP_EXTERNAL_URI=http://127.0.0.1:9000/
-#    entrypoint: /usr/bin/tini -- wait-for-it elasticsearch:9200 --  /docker-entrypoint.sh
-#    networks:
-#      - ompnw
-#    links:
-#      - mongo
-#      - elasticsearch
-#    depends_on:
-#      - mongo
-#      - elasticsearch
-#    ports:
-#      # Graylog web interface and REST API
-#      - 9000:9000
-#      # Syslog TCP
-#      - 1514:1514
-#      # Syslog UDP
-#      - 1514:1514/udp
-#      # GELF TCP
-#      - 12201:12201
-#      # GELF UDP
-#      - 12201:12201/udp
-#    restart: always
+  graylog:
+    image: graylog/graylog:4.0
+    environment:
+      # CHANGE ME (must be at least 16 characters)!
+      - GRAYLOG_PASSWORD_SECRET=somepasswordpepper
+      # Password: admin
+      - GRAYLOG_ROOT_PASSWORD_SHA2=8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
+      - GRAYLOG_HTTP_EXTERNAL_URI=http://127.0.0.1:9000/
+      - GRAYLOG_HTTP_ENABLE_CORS=true
+    entrypoint: /usr/bin/tini -- wait-for-it elasticsearch:9200 --  /docker-entrypoint.sh
+    networks:
+      - ompnw
+    links:
+      - mongo
+      - elasticsearch
+    depends_on:
+      - mongo
+      - elasticsearch
+    ports:
+      # Graylog web interface and REST API
+      - 9000:9000
+      # Syslog TCP
+      - 1514:1514
+      # Syslog UDP
+      - 1514:1514/udp
+      # GELF TCP
+      - 12201:12201
+      # GELF UDP
+      - 12201:12201/udp
+    restart: always
 
 volumes:
   pgdata:

@@ -2,10 +2,13 @@ package api
 
 import (
 	"context"
+	"github.com/opentracing/opentracing-go"
 	"github.com/ozonmp/pay-card-api/internal/model"
+	"github.com/ozonmp/pay-card-api/internal/pkg/logger"
+	"github.com/ozonmp/pay-card-api/internal/pkg/metrics"
 	"github.com/ozonmp/pay-card-api/internal/repo/cards"
 	repo_cards_events "github.com/ozonmp/pay-card-api/internal/repo/cards_events"
-	"github.com/rs/zerolog/log"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -35,18 +38,27 @@ func NewTemplateAPI(r repo_cards.Repo, repoEvents repo_cards_events.Repo) pb.Pay
 }
 
 func (a cardAPI) CreateCard(ctx context.Context, req *pb.CreateCardV1Request) (*pb.CreateCardV1Response, error) {
+	notifySpan, _ := opentracing.StartSpanFromContext(ctx, "CreateCardV1Request - start request")
 	if err := req.Validate(); err != nil {
-		log.Error().Err(err).Msg("CreateCardV1Request - invalid argument")
-
+		logger.WarnKV(ctx, "CreateCardV1Request - invalid argument", "err", err)
+		notifySpan.SetTag("CreateCardV1Request - invalid argument", err)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	log.Debug().Msg("CreateCard request happens")
+	logger.InfoKV(ctx, "CreateCard request happens")
+	metrics.IncrementCUDCardOperationsTotalCount(metrics.Create)
 
 	createEvent := MapCreateEvent(req)
 
-	id, err := a.repo.Add(createEvent.Entity)
+	id, err := a.repo.Add(ctx, createEvent.Entity)
 	if err != nil {
+		card := req.GetCard()
+		notifySpan.SetTag("CreateCardV1Request - error occured when create card", err).
+			SetTag("HolderName", card.GetHolderName()).
+			SetTag("Cvc", card.GetCvcCvv()).
+			SetTag("Number", card.GetNumber()).
+			SetTag("OwnerId", card.GetOwnerId()).
+			SetTag("PaymentSystem", card.GetPaymentSystem())
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	err = a.repoEvents.Add([]model.CardEvent{*createEvent})
@@ -63,18 +75,24 @@ func (a cardAPI) CreateCard(ctx context.Context, req *pb.CreateCardV1Request) (*
 }
 
 func (a cardAPI) RemoveCard(ctx context.Context, req *pb.RemoveCardV1Request) (*emptypb.Empty, error) {
-	if err := req.Validate(); err != nil {
-		log.Error().Err(err).Msg("RemoveCardV1Request - invalid argument")
+	notifySpan, _ := opentracing.StartSpanFromContext(ctx, "RemoveCard - start request")
+	defer notifySpan.Finish()
 
+	if err := req.Validate(); err != nil {
+		logger.WarnKV(ctx, "RemoveCardV1Request - invalid argument", "err", err)
+		notifySpan.SetTag("RemoveCardV1Request - invalid argument", err)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	log.Debug().Msg("RemoveCard request happens")
+	logger.InfoKV(ctx, "RemoveCard request happens")
+	metrics.IncrementCUDCardOperationsTotalCount(metrics.Delete)
 
 	removeEvent := MapRemoveEvent(req)
 
 	_, err := a.repo.Remove(removeEvent.Entity.CardId)
 	if err != nil {
+		notifySpan.SetTag("RemoveCardV1Request - remove error", err).
+			SetTag("CardId", req.GetId())
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	err = a.repoEvents.Add([]model.CardEvent{*removeEvent})
@@ -87,17 +105,25 @@ func (a cardAPI) RemoveCard(ctx context.Context, req *pb.RemoveCardV1Request) (*
 }
 
 func (a cardAPI) DescribeCard(ctx context.Context, req *pb.DescribeCardV1Request) (*pb.Card, error) {
+	notifySpan, _ := opentracing.StartSpanFromContext(ctx, "DescribeCard - start request")
 	if err := req.Validate(); err != nil {
-		log.Error().Err(err).Msg("DescribeCardV1Request - invalid argument")
+		logger.WarnKV(ctx, "DescribeCardV1Request - invalid argument", "err", err)
 
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	log.Debug().Msg("DescribeCard request happens")
+	logger.InfoKV(ctx, "DescribeCard request happens")
 
 	card, err := a.repo.Get(req.GetId())
 	if err != nil {
+		notifySpan.SetTag("DescribeCardV1Request - get card by id error", err).
+			SetTag("CardId", req.GetId())
 		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if card == nil {
+		metrics.IncrementNotFoundCardTotalCount()
+		return nil, status.Error(codes.NotFound, "card not found")
 	}
 
 	response := &pb.Card{
@@ -113,16 +139,18 @@ func (a cardAPI) DescribeCard(ctx context.Context, req *pb.DescribeCardV1Request
 }
 
 func (a cardAPI) ListCard(ctx context.Context, req *pb.ListCardV1Request) (*pb.ListCardV1Response, error) {
+	notifySpan, _ := opentracing.StartSpanFromContext(ctx, "ListCard - start request")
 	if err := req.Validate(); err != nil {
-		log.Error().Err(err).Msg("ListCard - invalid argument")
+		logger.WarnKV(ctx, "ListCardV1Request - invalid argument", "err", err)
 
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	log.Debug().Msg("ListCard request happens")
+	logger.InfoKV(ctx, "ListCard request happens")
 
 	cards, err := a.repo.List(req.GetOffset(), req.GetLimit())
 	if err != nil {
+		notifySpan.SetTag("ListCardV1Request - get cards error", err)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 

@@ -1,13 +1,14 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/ozonmp/pay-card-api/internal/pkg/logger"
 	"net/http"
 	"sync/atomic"
 
 	"github.com/ozonmp/pay-card-api/internal/config"
-	"github.com/rs/zerolog/log"
 )
 
 func createStatusServer(cfg *config.Config, isReady *atomic.Value) *http.Server {
@@ -55,7 +56,7 @@ func versionHandler(cfg *config.Config) func(w http.ResponseWriter, _ *http.Requ
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(data); err != nil {
-			log.Error().Err(err).Msg("Service information encoding error")
+			logger.ErrorKV(context.Background(), "Service information encoding error")
 		}
 	}
 }

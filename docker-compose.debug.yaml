@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  reverseproxy-local:
+    image: nginx
+    ports:
+      - "8085:8080"
+    volumes:
+      - ./nginx/nginx.debug.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - swagger-ui-local
+    restart: always
+
+  swagger-ui-local:
+    image: swaggerapi/swagger-ui
+    ports:
+      - 8081:8080
+    restart: always
+    volumes:
+      - ./swagger:/swagger
+    environment:
+      SWAGGER_JSON: /swagger/ozonmp/pay_card_api/v1/pay_card_api.swagger.json
