@@ -114,12 +114,11 @@ func (s *GrpcServer) Start(cfg *config.Config) error {
 
 	repo := repo_cards.NewCardRepo(s.db)
 	repoEvents := repo_cards_events.NewCardEventsRepo(s.db)
-	producer, err := sender.NewSyncProducer([]string{"localhost:9094"})
+	eventSender, err := sender.NewKafkaSender([]string{"localhost:9094"})
 	if err != nil {
 		logger.ErrorKV(ctx, "Failed running kafka producer")
 		return err
 	}
-	eventSender := sender.NewKafkaSender(producer)
 
 	pb.RegisterPayCardApiServiceServer(grpcServer, api.NewTemplateAPI(repo, repoEvents))
 	grpc_prometheus.EnableHandlingTimeHistogram()

@@ -141,6 +141,130 @@ var _ interface {
 	ErrorName() string
 } = CardValidationError{}
 
+// Validate checks the field values on UpdateCard with the rules defined in the
+// proto definition for this message. If any rules are violated, an error is returned.
+func (m *UpdateCard) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if v, ok := interface{}(m.GetOwnerId()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UpdateCardValidationError{
+				field:  "OwnerId",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if v, ok := interface{}(m.GetPaymentSystem()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UpdateCardValidationError{
+				field:  "PaymentSystem",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if v, ok := interface{}(m.GetNumber()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UpdateCardValidationError{
+				field:  "Number",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if v, ok := interface{}(m.GetHolderName()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UpdateCardValidationError{
+				field:  "HolderName",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if v, ok := interface{}(m.GetCvcCvv()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UpdateCardValidationError{
+				field:  "CvcCvv",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if v, ok := interface{}(m.GetExpirationDate()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UpdateCardValidationError{
+				field:  "ExpirationDate",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	return nil
+}
+
+// UpdateCardValidationError is the validation error returned by
+// UpdateCard.Validate if the designated constraints aren't met.
+type UpdateCardValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateCardValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateCardValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateCardValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateCardValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateCardValidationError) ErrorName() string { return "UpdateCardValidationError" }
+
+// Error satisfies the builtin error interface
+func (e UpdateCardValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateCard.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateCardValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateCardValidationError{}
+
 // Validate checks the field values on RemoveCardV1Request with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, an error is returned.
@@ -436,6 +560,85 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CreateCardV1RequestValidationError{}
+
+// Validate checks the field values on UpdateCardV1Request with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *UpdateCardV1Request) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for Id
+
+	if v, ok := interface{}(m.GetCard()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UpdateCardV1RequestValidationError{
+				field:  "Card",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	return nil
+}
+
+// UpdateCardV1RequestValidationError is the validation error returned by
+// UpdateCardV1Request.Validate if the designated constraints aren't met.
+type UpdateCardV1RequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateCardV1RequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateCardV1RequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateCardV1RequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateCardV1RequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateCardV1RequestValidationError) ErrorName() string {
+	return "UpdateCardV1RequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateCardV1RequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateCardV1Request.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateCardV1RequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateCardV1RequestValidationError{}
 
 // Validate checks the field values on CreateCardV1Response with the rules
 // defined in the proto definition for this message. If any rules are

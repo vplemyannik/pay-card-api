@@ -2,6 +2,7 @@ package repo_cards_events
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
@@ -107,7 +108,7 @@ func (r repo) Add(events []model.CardEvent) error {
 	updated := time.Now()
 	for _, event := range events {
 		if payload, err := json.Marshal(event.Entity); err == nil {
-			query = query.Values(event.Entity.CardId, event.Type, event.Status, payload, updated)
+			query = query.Values(event.Entity.(CardEventPayload).GetCardId(), event.Type, event.Status, payload, updated)
 		} else {
 			return err
 		}
@@ -133,20 +134,43 @@ func (r repo) Remove(eventIDs []uint64) error {
 }
 
 func mapToDomain(eventDb CardEventDb) (*model.CardEvent, error) {
-	var card model.Card
-	if eventDb.Payload.Valid {
-		if err := json.Unmarshal([]byte(eventDb.Payload.String), &card); err != nil {
-			return nil, err
-		}
+	entity, err := UnmarshalEntity(eventDb.Type, eventDb.Payload)
+	if err != nil {
+		return nil, err
 	}
-
-	card.CardId = eventDb.CardId
 
 	return &CardEvent{
 		ID:        eventDb.ID,
 		Type:      eventDb.Type,
 		Status:    eventDb.Status,
-		Entity:    card,
+		Entity:    entity,
 		OccuredAt: eventDb.UpdatedAt,
 	}, nil
+}
+
+func UnmarshalEntity(eventType model.EventType, payload sql.NullString) (interface{}, error) {
+	switch eventType {
+	case Created:
+		var created model.CreateCardEventPayload
+		err := UnmarshalEvent(payload, &created)
+		return created, err
+	case Removed:
+		var removed model.RemoveCardEventPayload
+		err := UnmarshalEvent(payload, &removed)
+		return removed, err
+	case Updated:
+		var updated model.UpdateCardEventPayload
+		err := UnmarshalEvent(payload, &updated)
+		return updated, err
+	}
+	return nil, nil
+}
+
+func UnmarshalEvent(payload sql.NullString, value interface{}) error {
+	if payload.Valid {
+		if err := json.Unmarshal([]byte(payload.String), value); err != nil {
+			return err
+		}
+	}
+	return nil
 }

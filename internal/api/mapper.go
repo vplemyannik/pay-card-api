@@ -7,9 +7,9 @@ import (
 	pb "github.com/ozonmp/pay-card-api/pkg/pay-card-api"
 )
 
-func MapCreateEvent(req *pb.CreateCardV1Request) *model.CardEvent {
+func MapCreateCardEventPayload(req *pb.CreateCardV1Request) *model.CreateCardEventPayload {
 	card := req.GetCard()
-	entity := model.Card{
+	return &model.CreateCardEventPayload{
 		OwnerId:        card.GetOwnerId(),
 		PaymentSystem:  card.GetPaymentSystem(),
 		ExpirationDate: card.GetExpirationDate().AsTime(),
@@ -17,23 +17,46 @@ func MapCreateEvent(req *pb.CreateCardV1Request) *model.CardEvent {
 		CvcCvv:         card.GetCvcCvv(),
 		Number:         card.GetNumber(),
 	}
+}
 
-	return &model.CardEvent{
-		Type:   model.Created,
-		Status: model.New,
-		Entity: entity,
+func MapRemoveCardEventPayload(r *pb.RemoveCardV1Request) *model.RemoveCardEventPayload {
+	cardId := r.GetId()
+	return &model.RemoveCardEventPayload{
+		CardId: cardId,
 	}
 }
 
-func MapRemoveEvent(r *pb.RemoveCardV1Request) *model.CardEvent {
+func MapUpdateCardEventPayload(r *pb.UpdateCardV1Request) *model.UpdateCardEventPayload {
 	cardId := r.GetId()
-	return &model.CardEvent{
-		Type:   model.Removed,
-		Status: model.New,
-		Entity: model.Card{
-			CardId: cardId,
-		},
+	card := r.GetCard()
+
+	var updateCard model.UpdateCardEventPayload
+	updateCard.CardId = cardId
+	if card.GetOwnerId() != nil {
+		value := card.GetOwnerId().GetValue()
+		updateCard.OwnerId = &value
 	}
+	if card.GetPaymentSystem() != nil {
+		value := card.GetPaymentSystem().GetValue()
+		updateCard.PaymentSystem = &value
+	}
+	if card.GetNumber() != nil {
+		value := card.GetNumber().GetValue()
+		updateCard.Number = &value
+	}
+	if card.GetHolderName() != nil {
+		value := card.GetHolderName().GetValue()
+		updateCard.HolderName = &value
+	}
+	if card.GetCvcCvv() != nil {
+		value := card.GetCvcCvv().GetValue()
+		updateCard.CvcCvv = &value
+	}
+	if card.GetExpirationDate() != nil {
+		value := card.GetExpirationDate().AsTime()
+		updateCard.ExpirationDate = &value
+	}
+	return &updateCard
 }
 
 func MapProtoModel(card *model.Card) *pb.Card {

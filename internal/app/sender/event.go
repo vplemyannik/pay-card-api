@@ -18,42 +18,48 @@ type kafkaSender struct {
 	producer sarama.SyncProducer
 }
 
-func NewKafkaSender(producer sarama.SyncProducer) EventSender {
+func NewKafkaSender(brokers []string) (EventSender, error) {
+	config := sarama.NewConfig()
+	config.Producer.Partitioner = sarama.NewRandomPartitioner
+	config.Producer.RequiredAcks = sarama.WaitForAll
+	config.Producer.Return.Successes = true
+	producer, err := sarama.NewSyncProducer(brokers, config)
 	return &kafkaSender{
 		producer: producer,
-	}
+	}, err
 }
 
 func (sender kafkaSender) Send(events []model.CardEvent) error {
 	for _, event := range events {
-		body, _ := marshalEvent(event)
-		switch event.Type {
-		case model.Created:
-			SendMessage(sender.producer, "card_created", body)
-		case model.Removed:
-			SendMessage(sender.producer, "card_removed", body)
-		case model.Updated:
-			SendMessage(sender.producer, "card_updated", body)
-		}
+		message, _ := createMessage(event)
+		sender.producer.SendMessage(message)
 	}
-
 	return nil
 }
 
-func marshalEvent(event model.CardEvent) ([]byte, error) {
+func createMessage(event model.CardEvent) (*sarama.ProducerMessage, error) {
 	var protoMessage proto.Message
+	var topicName string
 	switch event.Type {
 	case model.Created:
-		protoMessage = mapIntoCreatedProto(event.Entity, event.OccuredAt)
+		protoMessage = mapIntoCreatedProto(event.Entity.(model.CreateCardEventPayload), event.OccuredAt)
+		topicName = "card_created"
 	case model.Removed:
-		protoMessage = mapIntoRemovedProto(event.Entity.CardId, event.OccuredAt)
+		protoMessage = mapIntoRemovedProto(event.Entity.(model.RemoveCardEventPayload).CardId, event.OccuredAt)
+		topicName = "card_removed"
 	case model.Updated:
-		protoMessage = mapIntoUpdatedProto(event.Entity, event.OccuredAt)
+		protoMessage = mapIntoUpdatedProto(event.Entity.(model.UpdateCardEventPayload), event.OccuredAt)
+		topicName = "card_updated"
 	}
-	return protojson.Marshal(protoMessage)
+	body, err := protojson.Marshal(protoMessage)
+	return &sarama.ProducerMessage{
+		Topic:     topicName,
+		Partition: -1,
+		Value:     sarama.ByteEncoder(body),
+	}, err
 }
 
-func mapIntoCreatedProto(card model.Card, createdAt time.Time) *events.CardCreated {
+func mapIntoCreatedProto(card model.CreateCardEventPayload, createdAt time.Time) *events.CardCreated {
 	return &events.CardCreated{
 		CreatedAt: timestamppb.New(createdAt),
 		Card: &events.Card{
@@ -75,18 +81,21 @@ func mapIntoRemovedProto(cardId uint64, createdAt time.Time) *events.CardDeleted
 	}
 }
 
-func mapIntoUpdatedProto(card model.Card, updatedAt time.Time) *events.CardUpdated {
-
+func mapIntoUpdatedProto(card model.UpdateCardEventPayload, updatedAt time.Time) *events.CardUpdated {
+	var expirationDate *timestamppb.Timestamp
+	if card.ExpirationDate != nil {
+		expirationDate = timestamppb.New(*card.ExpirationDate)
+	}
 	return &events.CardUpdated{
 		UpdatedAt: timestamppb.New(updatedAt),
 		Card: &events.UpdateCard{
-			OwnerId:        &card.OwnerId,
+			CardId:         card.CardId,
+			OwnerId:        card.OwnerId,
 			PaymentSystem:  card.PaymentSystem,
 			Number:         card.Number,
 			HolderName:     card.HolderName,
 			CvcCvv:         card.CvcCvv,
-			CardId:         card.CardId,
-			ExpirationDate: timestamppb.New(card.ExpirationDate),
+			ExpirationDate: expirationDate,
 		},
 	}
 }
