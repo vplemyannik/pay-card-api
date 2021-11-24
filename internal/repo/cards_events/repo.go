@@ -124,7 +124,10 @@ func (r repo) Add(events []model.CardEvent) error {
 }
 
 func (r repo) Remove(eventIDs []uint64) error {
-	query := sq.Delete("card_events").Where(sq.Eq{"id": eventIDs})
+	query := psql.Delete("cards_events").
+		Where(sq.Eq{"id": eventIDs}).
+		RunWith(r.db)
+
 	s, args, err := query.ToSql()
 	if err != nil {
 		return err

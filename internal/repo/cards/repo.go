@@ -12,8 +12,8 @@ import (
 
 // Repo is DAO for Template
 type Repo interface {
-	Add(ctx context.Context, card *model.CreateCardEventPayload) (uint64, error)
-	Update(ctx context.Context, card *model.UpdateCardEventPayload) error
+	Add(ctx context.Context, card *model.Card) (uint64, error)
+	Update(ctx context.Context, card *model.Card) error
 	Get(cardID uint64) (*model.Card, error)
 	List(limit uint64, cursor uint64) ([]model.Card, error)
 	Remove(cardID uint64) (bool, error)
@@ -29,7 +29,7 @@ func NewCardRepo(db *sqlx.DB) Repo {
 	return &repo{db: db}
 }
 
-func (c repo) Add(ctx context.Context, card *model.CreateCardEventPayload) (uint64, error) {
+func (c repo) Add(ctx context.Context, card *model.Card) (uint64, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "repo.SaveCard")
 	defer span.Finish()
 
@@ -55,31 +55,19 @@ func (c repo) Add(ctx context.Context, card *model.CreateCardEventPayload) (uint
 	}
 }
 
-func (c repo) Update(ctx context.Context, card *model.UpdateCardEventPayload) error {
+func (c repo) Update(ctx context.Context, card *model.Card) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "repo.UpdateCard")
 	defer span.Finish()
 
-	query := psql.Update("cards")
-	if card.OwnerId != nil {
-		query = query.Set("owner_id", *card.OwnerId)
-	}
-	if card.PaymentSystem != nil {
-		query = query.Set("payment_system", *card.PaymentSystem)
-	}
-	if card.Number != nil {
-		query = query.Set("number", *card.Number)
-	}
-	if card.HolderName != nil {
-		query = query.Set("holder_name", *card.HolderName)
-	}
-	if card.ExpirationDate != nil {
-		query = query.Set("expiration_date", *card.ExpirationDate)
-	}
-	if card.CvcCvv != nil {
-		query = query.Set("cvccvv", *card.CvcCvv)
-	}
-
-	query = query.Where(sq.Eq{"id": card.CardId}).RunWith(c.db)
+	query := psql.Update("cards").
+		Set("owner_id", card.OwnerId).
+		Set("payment_system", card.PaymentSystem).
+		Set("number", card.Number).
+		Set("holder_name", card.HolderName).
+		Set("expiration_date", card.ExpirationDate).
+		Set("cvccvv", card.CvcCvv).
+		Where(sq.Eq{"id": card.CardId}).
+		RunWith(c.db)
 
 	_, err := query.Query()
 

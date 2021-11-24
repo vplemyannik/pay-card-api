@@ -132,12 +132,12 @@ func (s *GrpcServer) Start(cfg *config.Config) error {
 	}()
 
 	retranslatorCfg := retranslator.Config{
-		ChannelSize:    512,
-		ConsumerCount:  1,
-		ConsumeSize:    2,
-		ConsumeTimeout: 1 * time.Second,
-		ProducerCount:  1,
-		WorkerCount:    1,
+		ChannelSize:    cfg.Retranslator.ChannelSize,
+		ConsumerCount:  cfg.Retranslator.ConsumerCount,
+		ConsumeSize:    cfg.Retranslator.ConsumeSize,
+		ConsumeTimeout: time.Duration(cfg.Retranslator.ConsumeTimeout) * time.Millisecond,
+		ProducerCount:  cfg.Retranslator.ProducerCount,
+		WorkerCount:    cfg.Retranslator.WorkerCount,
 		Repo:           repoEvents,
 		Sender:         eventSender,
 	}

@@ -44,6 +44,14 @@ database:
   sslmode: disable
   driver: pgx
 
+retranslator:
+  channelSize: 512
+  consumerCount: 2
+  consumeSize: 10
+  consumeTimeout: 1000
+  producerCount: 2
+  workerCount: 2
+
 kafka:
   capacity: 512
   topic: "omp-template-events"

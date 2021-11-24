@@ -57,7 +57,8 @@ func (a cardAPI) CreateCard(ctx context.Context, req *pb.CreateCardV1Request) (*
 		OccuredAt: time.Now(),
 	}
 
-	id, err := a.repo.Add(ctx, createEventPayload)
+	card := createEventPayload.MapToCard()
+	id, err := a.repo.Add(ctx, &card)
 	createEventPayload.CardId = id
 
 	if err != nil {
@@ -102,7 +103,27 @@ func (a cardAPI) UpdateCard(ctx context.Context, req *pb.UpdateCardV1Request) (*
 		OccuredAt: time.Now(),
 	}
 
-	err := a.repo.Update(ctx, updateEventPayload)
+	card, err := a.repo.Get(updateEventPayload.GetCardId())
+	if updateEventPayload.OwnerId != nil {
+		card.OwnerId = *updateEventPayload.OwnerId
+	}
+	if updateEventPayload.PaymentSystem != nil {
+		card.PaymentSystem = *updateEventPayload.PaymentSystem
+	}
+	if updateEventPayload.Number != nil {
+		card.Number = *updateEventPayload.Number
+	}
+	if updateEventPayload.HolderName != nil {
+		card.HolderName = *updateEventPayload.HolderName
+	}
+	if updateEventPayload.ExpirationDate != nil {
+		card.ExpirationDate = *updateEventPayload.ExpirationDate
+	}
+	if updateEventPayload.CvcCvv != nil {
+		card.CvcCvv = *updateEventPayload.CvcCvv
+	}
+
+	err = a.repo.Update(ctx, card)
 
 	if err != nil {
 		card := updateEventPayload
