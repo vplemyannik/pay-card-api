@@ -35,6 +35,15 @@ type Database struct {
 	Driver   string `yaml:"driver"`
 }
 
+type Retranslator struct {
+	ChannelSize    uint64 `yaml:"channelSize"`
+	ConsumerCount  uint64 `yaml:"consumerCount"`
+	ConsumeSize    uint64 `yaml:"consumeSize"`
+	ConsumeTimeout int    `yaml:"consumeTimeout"`
+	ProducerCount  uint64 `yaml:"producerCount"`
+	WorkerCount    int    `yaml:"workerCount"`
+}
+
 // Grpc - contains parameter address grpc.
 type Grpc struct {
 	Port              int    `yaml:"port"`
@@ -97,15 +106,16 @@ type Telemetry struct {
 
 // Config - contains all configuration parameters in config package.
 type Config struct {
-	Project   Project   `yaml:"project"`
-	Grpc      Grpc      `yaml:"grpc"`
-	Rest      Rest      `yaml:"rest"`
-	Database  Database  `yaml:"database"`
-	Metrics   Metrics   `yaml:"metrics"`
-	Jaeger    Jaeger    `yaml:"jaeger"`
-	Kafka     Kafka     `yaml:"kafka"`
-	Status    Status    `yaml:"status"`
-	Telemetry Telemetry `yaml:"telemetry"`
+	Project      Project      `yaml:"project"`
+	Grpc         Grpc         `yaml:"grpc"`
+	Rest         Rest         `yaml:"rest"`
+	Database     Database     `yaml:"database"`
+	Metrics      Metrics      `yaml:"metrics"`
+	Jaeger       Jaeger       `yaml:"jaeger"`
+	Kafka        Kafka        `yaml:"kafka"`
+	Status       Status       `yaml:"status"`
+	Telemetry    Telemetry    `yaml:"telemetry"`
+	Retranslator Retranslator `yaml:"retranslator"`
 }
 
 // ReadConfigYML - read configurations from file and init instance Config.

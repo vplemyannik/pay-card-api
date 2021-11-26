@@ -8,6 +8,7 @@ import (
 	"github.com/ozonmp/pay-card-api/internal/pkg/metrics"
 	"github.com/ozonmp/pay-card-api/internal/repo/cards"
 	repo_cards_events "github.com/ozonmp/pay-card-api/internal/repo/cards_events"
+	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -48,9 +49,18 @@ func (a cardAPI) CreateCard(ctx context.Context, req *pb.CreateCardV1Request) (*
 	logger.InfoKV(ctx, "CreateCard request happens")
 	metrics.IncrementCUDCardOperationsTotalCount(metrics.Create)
 
-	createEvent := MapCreateEvent(req)
+	createEventPayload := MapCreateCardEventPayload(req)
+	createEvent := model.CardEvent{
+		Type:      model.Created,
+		Status:    model.New,
+		Entity:    createEventPayload,
+		OccuredAt: time.Now(),
+	}
 
-	id, err := a.repo.Add(ctx, createEvent.Entity)
+	card := createEventPayload.MapToCard()
+	id, err := a.repo.Add(ctx, &card)
+	createEventPayload.CardId = id
+
 	if err != nil {
 		card := req.GetCard()
 		notifySpan.SetTag("CreateCardV1Request - error occured when create card", err).
@@ -61,7 +71,7 @@ func (a cardAPI) CreateCard(ctx context.Context, req *pb.CreateCardV1Request) (*
 			SetTag("PaymentSystem", card.GetPaymentSystem())
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	err = a.repoEvents.Add([]model.CardEvent{*createEvent})
+	err = a.repoEvents.Add([]model.CardEvent{createEvent})
 
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -72,6 +82,79 @@ func (a cardAPI) CreateCard(ctx context.Context, req *pb.CreateCardV1Request) (*
 	}
 
 	return &response, err
+}
+
+func (a cardAPI) UpdateCard(ctx context.Context, req *pb.UpdateCardV1Request) (*emptypb.Empty, error) {
+	notifySpan, _ := opentracing.StartSpanFromContext(ctx, "UpdateCardV1Request - start request")
+	if err := req.Validate(); err != nil {
+		logger.WarnKV(ctx, "UpdateCardV1Request - invalid argument", "err", err)
+		notifySpan.SetTag("UpdateCardV1Request - invalid argument", err)
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	logger.InfoKV(ctx, "UpdateCard request happens")
+	metrics.IncrementCUDCardOperationsTotalCount(metrics.Update)
+
+	updateEventPayload := MapUpdateCardEventPayload(req)
+	updateEvent := model.CardEvent{
+		Type:      model.Updated,
+		Status:    model.New,
+		Entity:    updateEventPayload,
+		OccuredAt: time.Now(),
+	}
+
+	card, err := a.repo.Get(updateEventPayload.GetCardId())
+	if updateEventPayload.OwnerId != nil {
+		card.OwnerId = *updateEventPayload.OwnerId
+	}
+	if updateEventPayload.PaymentSystem != nil {
+		card.PaymentSystem = *updateEventPayload.PaymentSystem
+	}
+	if updateEventPayload.Number != nil {
+		card.Number = *updateEventPayload.Number
+	}
+	if updateEventPayload.HolderName != nil {
+		card.HolderName = *updateEventPayload.HolderName
+	}
+	if updateEventPayload.ExpirationDate != nil {
+		card.ExpirationDate = *updateEventPayload.ExpirationDate
+	}
+	if updateEventPayload.CvcCvv != nil {
+		card.CvcCvv = *updateEventPayload.CvcCvv
+	}
+
+	err = a.repo.Update(ctx, card)
+
+	if err != nil {
+		card := updateEventPayload
+		notifySpan.SetTag("UpdateCardV1Request - error occured when update card", err)
+		if card.OwnerId != nil {
+			notifySpan = notifySpan.SetTag("owner_id", *card.OwnerId)
+		}
+		if card.PaymentSystem != nil {
+			notifySpan = notifySpan.SetTag("payment_system", *card.PaymentSystem)
+		}
+		if card.Number != nil {
+			notifySpan = notifySpan.SetTag("number", *card.Number)
+		}
+		if card.HolderName != nil {
+			notifySpan = notifySpan.SetTag("holder_name", *card.HolderName)
+		}
+		if card.ExpirationDate != nil {
+			notifySpan = notifySpan.SetTag("expiration_date", *card.ExpirationDate)
+		}
+		if card.CvcCvv != nil {
+			notifySpan = notifySpan.SetTag("cvccvv", *card.CvcCvv)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	err = a.repoEvents.Add([]model.CardEvent{updateEvent})
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &emptypb.Empty{}, err
 }
 
 func (a cardAPI) RemoveCard(ctx context.Context, req *pb.RemoveCardV1Request) (*emptypb.Empty, error) {
@@ -87,15 +170,21 @@ func (a cardAPI) RemoveCard(ctx context.Context, req *pb.RemoveCardV1Request) (*
 	logger.InfoKV(ctx, "RemoveCard request happens")
 	metrics.IncrementCUDCardOperationsTotalCount(metrics.Delete)
 
-	removeEvent := MapRemoveEvent(req)
+	removeEventPayload := MapRemoveCardEventPayload(req)
+	removeEvent := model.CardEvent{
+		Type:      model.Removed,
+		Status:    model.New,
+		Entity:    removeEventPayload,
+		OccuredAt: time.Now(),
+	}
 
-	_, err := a.repo.Remove(removeEvent.Entity.CardId)
+	_, err := a.repo.Remove(removeEventPayload.CardId)
 	if err != nil {
 		notifySpan.SetTag("RemoveCardV1Request - remove error", err).
 			SetTag("CardId", req.GetId())
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	err = a.repoEvents.Add([]model.CardEvent{*removeEvent})
+	err = a.repoEvents.Add([]model.CardEvent{removeEvent})
 
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

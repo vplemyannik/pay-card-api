@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PayCardApiServiceClient interface {
 	CreateCard(ctx context.Context, in *CreateCardV1Request, opts ...grpc.CallOption) (*CreateCardV1Response, error)
+	UpdateCard(ctx context.Context, in *UpdateCardV1Request, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	RemoveCard(ctx context.Context, in *RemoveCardV1Request, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	DescribeCard(ctx context.Context, in *DescribeCardV1Request, opts ...grpc.CallOption) (*Card, error)
 	ListCard(ctx context.Context, in *ListCardV1Request, opts ...grpc.CallOption) (*ListCardV1Response, error)
@@ -36,6 +37,15 @@ func NewPayCardApiServiceClient(cc grpc.ClientConnInterface) PayCardApiServiceCl
 func (c *payCardApiServiceClient) CreateCard(ctx context.Context, in *CreateCardV1Request, opts ...grpc.CallOption) (*CreateCardV1Response, error) {
 	out := new(CreateCardV1Response)
 	err := c.cc.Invoke(ctx, "/ozonmp.pay_card_api.v1.PayCardApiService/CreateCard", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *payCardApiServiceClient) UpdateCard(ctx context.Context, in *UpdateCardV1Request, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, "/ozonmp.pay_card_api.v1.PayCardApiService/UpdateCard", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -74,6 +84,7 @@ func (c *payCardApiServiceClient) ListCard(ctx context.Context, in *ListCardV1Re
 // for forward compatibility
 type PayCardApiServiceServer interface {
 	CreateCard(context.Context, *CreateCardV1Request) (*CreateCardV1Response, error)
+	UpdateCard(context.Context, *UpdateCardV1Request) (*emptypb.Empty, error)
 	RemoveCard(context.Context, *RemoveCardV1Request) (*emptypb.Empty, error)
 	DescribeCard(context.Context, *DescribeCardV1Request) (*Card, error)
 	ListCard(context.Context, *ListCardV1Request) (*ListCardV1Response, error)
@@ -86,6 +97,9 @@ type UnimplementedPayCardApiServiceServer struct {
 
 func (UnimplementedPayCardApiServiceServer) CreateCard(context.Context, *CreateCardV1Request) (*CreateCardV1Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateCard not implemented")
+}
+func (UnimplementedPayCardApiServiceServer) UpdateCard(context.Context, *UpdateCardV1Request) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateCard not implemented")
 }
 func (UnimplementedPayCardApiServiceServer) RemoveCard(context.Context, *RemoveCardV1Request) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveCard not implemented")
@@ -123,6 +137,24 @@ func _PayCardApiService_CreateCard_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(PayCardApiServiceServer).CreateCard(ctx, req.(*CreateCardV1Request))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PayCardApiService_UpdateCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateCardV1Request)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PayCardApiServiceServer).UpdateCard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/ozonmp.pay_card_api.v1.PayCardApiService/UpdateCard",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PayCardApiServiceServer).UpdateCard(ctx, req.(*UpdateCardV1Request))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -191,6 +223,10 @@ var PayCardApiService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateCard",
 			Handler:    _PayCardApiService_CreateCard_Handler,
+		},
+		{
+			MethodName: "UpdateCard",
+			Handler:    _PayCardApiService_UpdateCard_Handler,
 		},
 		{
 			MethodName: "RemoveCard",

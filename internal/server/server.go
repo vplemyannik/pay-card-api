@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ozonmp/pay-card-api/internal/app/retranslator"
+	"github.com/ozonmp/pay-card-api/internal/app/sender"
 	"github.com/ozonmp/pay-card-api/internal/pkg/logger"
 	repo_cards "github.com/ozonmp/pay-card-api/internal/repo/cards"
 	repo_cards_events "github.com/ozonmp/pay-card-api/internal/repo/cards_events"
@@ -112,6 +114,11 @@ func (s *GrpcServer) Start(cfg *config.Config) error {
 
 	repo := repo_cards.NewCardRepo(s.db)
 	repoEvents := repo_cards_events.NewCardEventsRepo(s.db)
+	eventSender, err := sender.NewKafkaSender([]string{"localhost:9094"})
+	if err != nil {
+		logger.ErrorKV(ctx, "Failed running kafka producer")
+		return err
+	}
 
 	pb.RegisterPayCardApiServiceServer(grpcServer, api.NewTemplateAPI(repo, repoEvents))
 	grpc_prometheus.EnableHandlingTimeHistogram()
@@ -122,6 +129,23 @@ func (s *GrpcServer) Start(cfg *config.Config) error {
 		if err := grpcServer.Serve(l); err != nil {
 			logger.ErrorKV(ctx, "Failed running gateway server")
 		}
+	}()
+
+	retranslatorCfg := retranslator.Config{
+		ChannelSize:    cfg.Retranslator.ChannelSize,
+		ConsumerCount:  cfg.Retranslator.ConsumerCount,
+		ConsumeSize:    cfg.Retranslator.ConsumeSize,
+		ConsumeTimeout: time.Duration(cfg.Retranslator.ConsumeTimeout) * time.Millisecond,
+		ProducerCount:  cfg.Retranslator.ProducerCount,
+		WorkerCount:    cfg.Retranslator.WorkerCount,
+		Repo:           repoEvents,
+		Sender:         eventSender,
+	}
+
+	retranslator := retranslator.NewRetranslator(retranslatorCfg)
+	go func() {
+		logger.InfoKV(ctx, "Retranslator is running")
+		retranslator.Start()
 	}()
 
 	go func() {
@@ -163,6 +187,9 @@ func (s *GrpcServer) Start(cfg *config.Config) error {
 	} else {
 		logger.InfoKV(ctx, "metricsServer shut down correctly")
 	}
+
+	retranslator.Close()
+	logger.InfoKV(ctx, "retranslator shut down correctly")
 
 	grpcServer.GracefulStop()
 	logger.InfoKV(ctx, "grpcServer shut down correctly")

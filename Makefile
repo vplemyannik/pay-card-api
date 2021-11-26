@@ -41,7 +41,7 @@ test:
 generate: .generate-install-buf .generate-go .generate-python .generate-finalize-go .generate-finalize-python
 
 .PHONY: generate
-generate-go: .generate-install-buf .generate-go .generate-finalize-go
+generate-go: .generate-install-buf .generate-go .generate-finalize-go .generate-events
 
 .generate-install-buf:
 	@ command -v buf 2>&1 > /dev/null || (echo "Install buf" && \
@@ -51,6 +51,9 @@ generate-go: .generate-install-buf .generate-go .generate-finalize-go
 
 .generate-go:
 	$(BUF_EXE) generate
+
+.generate-events:
+	protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative pkg/pay-card-events/messages.proto
 
 .generate-python:
 	$(BUF_EXE) generate --template buf.gen.python.yaml

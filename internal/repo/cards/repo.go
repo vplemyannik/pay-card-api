@@ -13,6 +13,7 @@ import (
 // Repo is DAO for Template
 type Repo interface {
 	Add(ctx context.Context, card *model.Card) (uint64, error)
+	Update(ctx context.Context, card *model.Card) error
 	Get(cardID uint64) (*model.Card, error)
 	List(limit uint64, cursor uint64) ([]model.Card, error)
 	Remove(cardID uint64) (bool, error)
@@ -52,6 +53,25 @@ func (c repo) Add(ctx context.Context, card *model.Card) (uint64, error) {
 	} else {
 		return 0, sql.ErrNoRows
 	}
+}
+
+func (c repo) Update(ctx context.Context, card *model.Card) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "repo.UpdateCard")
+	defer span.Finish()
+
+	query := psql.Update("cards").
+		Set("owner_id", card.OwnerId).
+		Set("payment_system", card.PaymentSystem).
+		Set("number", card.Number).
+		Set("holder_name", card.HolderName).
+		Set("expiration_date", card.ExpirationDate).
+		Set("cvccvv", card.CvcCvv).
+		Where(sq.Eq{"id": card.CardId}).
+		RunWith(c.db)
+
+	_, err := query.Query()
+
+	return err
 }
 
 func (c repo) Get(cardID uint64) (*model.Card, error) {

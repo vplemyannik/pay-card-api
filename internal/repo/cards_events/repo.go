@@ -2,6 +2,7 @@ package repo_cards_events
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
@@ -40,7 +41,7 @@ const (
 
 func (r repo) Lock(n uint64) ([]model.CardEvent, error) {
 
-	var events []model.CardEvent
+	events := make([]model.CardEvent, 0, n)
 
 	ctx := context.Background()
 	err := db.WithTx(ctx, r.db, func(ctx context.Context, tx *sqlx.Tx) error {
@@ -49,11 +50,18 @@ func (r repo) Lock(n uint64) ([]model.CardEvent, error) {
 			return errors.Wrap(err, "database.WithTx")
 		}
 
-		query := psql.Select("*").
-			From("cards_events").
-			Where("status = 'New'").
-			Limit(n).
-			OrderBy("updated_at ASC").
+		query := psql.Update("cards_events").
+			Set("status", model.Locked).
+			Where(sq.Select("id").
+				Prefix("id IN (").
+				From("cards_events").
+				Where(sq.Or{
+					sq.Eq{"status": model.New},
+				}).
+				OrderBy("updated_at ASC").
+				Limit(n).
+				Suffix(")")).
+			Suffix("RETURNING *").
 			RunWith(r.db)
 
 		sql, args, err := query.ToSql()
@@ -61,25 +69,19 @@ func (r repo) Lock(n uint64) ([]model.CardEvent, error) {
 			return err
 		}
 
-		var res []model.CardEvent
+		var res []CardEventDb
 		err = r.db.Select(&res, sql, args...)
 		if err != nil {
 			return err
 		}
 
-		ids := make([]uint64, 0, len(res))
-		for _, ev := range res {
-			ids = append(ids, ev.ID)
+		for _, event := range res {
+			mappedEvent, err := mapToDomain(event)
+			if err != nil {
+				return err
+			}
+			events = append(events, *mappedEvent)
 		}
-
-		updateQuery := psql.Update("cards_events").
-			Set("status", Locked).
-			Where(sq.Eq{"id": ids}).
-			RunWith(r.db)
-
-		_, err = updateQuery.Exec()
-
-		events = res
 
 		return nil
 	})
@@ -106,7 +108,7 @@ func (r repo) Add(events []model.CardEvent) error {
 	updated := time.Now()
 	for _, event := range events {
 		if payload, err := json.Marshal(event.Entity); err == nil {
-			query = query.Values(event.ID, event.Type, event.Status, payload, updated)
+			query = query.Values(event.Entity.(CardEventPayload).GetCardId(), event.Type, event.Status, payload, updated)
 		} else {
 			return err
 		}
@@ -122,11 +124,56 @@ func (r repo) Add(events []model.CardEvent) error {
 }
 
 func (r repo) Remove(eventIDs []uint64) error {
-	query := sq.Delete("card_events").Where(sq.Eq{"id": eventIDs})
+	query := psql.Delete("cards_events").
+		Where(sq.Eq{"id": eventIDs}).
+		RunWith(r.db)
+
 	s, args, err := query.ToSql()
 	if err != nil {
 		return err
 	}
 	_, err = r.db.Exec(s, args...)
 	return err
+}
+
+func mapToDomain(eventDb CardEventDb) (*model.CardEvent, error) {
+	entity, err := UnmarshalEntity(eventDb.Type, eventDb.Payload)
+	if err != nil {
+		return nil, err
+	}
+
+	return &CardEvent{
+		ID:        eventDb.ID,
+		Type:      eventDb.Type,
+		Status:    eventDb.Status,
+		Entity:    entity,
+		OccuredAt: eventDb.UpdatedAt,
+	}, nil
+}
+
+func UnmarshalEntity(eventType model.EventType, payload sql.NullString) (interface{}, error) {
+	switch eventType {
+	case Created:
+		var created model.CreateCardEventPayload
+		err := UnmarshalEvent(payload, &created)
+		return created, err
+	case Removed:
+		var removed model.RemoveCardEventPayload
+		err := UnmarshalEvent(payload, &removed)
+		return removed, err
+	case Updated:
+		var updated model.UpdateCardEventPayload
+		err := UnmarshalEvent(payload, &updated)
+		return updated, err
+	}
+	return nil, nil
+}
+
+func UnmarshalEvent(payload sql.NullString, value interface{}) error {
+	if payload.Valid {
+		if err := json.Unmarshal([]byte(payload.String), value); err != nil {
+			return err
+		}
+	}
+	return nil
 }
